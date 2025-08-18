@@ -1,0 +1,52 @@
+
+import { WithActions, EstatusTable } from './table';
+import { PrealertaBase } from '@/types/prealerta';
+import {ErroresInputs} from '@/types/input';
+
+export interface TrackingBase {
+    id: number;
+    idTracking: string;
+    nombreCliente: string;
+    descripcion: string; //preguntar si esta desc. es la igual q la de prealerta
+    desde: string | null;
+    hasta: string | null;
+    destino: string | null;
+    couriers: string;
+    trackingCompleto?: boolean;
+}
+
+export interface TrackingConsultadosTable extends TrackingTable, ErroresInputs {
+    trackingProveedor: string;
+    valor: number;
+    proveedor: string;
+    idProveedor?: number;
+    idCliente: number;
+}
+
+export interface TrackingRegistroTable extends TrackingTable {
+    trackingProveedor: string;
+    nombreProveedor: string;
+}
+
+export interface TrackingTable extends TrackingBase, WithActions {
+    estatus: EstatusTable;
+
+}
+
+export interface TrackingConProveedor extends TrackingBase {
+    proveedor: string;
+    idProveedor: number;
+    trackingProveedor: string;
+}
+
+export interface TrackingConPrealertaBase extends TrackingBase {
+    prealerta: PrealertaBase
+}
+
+export interface TrackingConPrealertaBaseProveedor extends TrackingConProveedor, TrackingConPrealertaBase, ErroresInputs, TrackingTable{
+
+}
+
+
+
+

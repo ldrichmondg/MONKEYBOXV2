@@ -1,0 +1,16 @@
+.tagify {
+    --tags-border-color: var(--color-gray-50);
+    --tags-hover-border-color: var(--color-gray-50);
+    --tags-focus-border-color: var(--color-gray-50);
+
+    --tag-bg: #ED1B24;
+    --tag-text-color: white;
+    --tag-hover: #c8101e;
+    --tag-remove-bg: transparent;
+    --tag-remove-btn-color: white;
+    padding: 10px!important;
+}
+
+.tagify__tag {
+    border-radius: 100px;
+}
