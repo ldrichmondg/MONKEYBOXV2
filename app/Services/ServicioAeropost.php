@@ -10,7 +10,6 @@ use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Models\Prealerta;
 use App\Models\Tracking;
 use App\Models\TrackingProveedor;
-use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -36,36 +35,35 @@ class ServicioAeropost
         // 7. Crear la prealerta
 
         // 1. Obtener el token de acceso
-        $tokenAcceso = ServicioAeropost::ObtenerTokenAcceso();
+        ServicioAeropost::ObtenerTokenAcceso();
 
         // 2. Obtenemos los couriers de Aeropost
         $couriers = ServicioAeropost::ObtenerCouriers();
-        //Log::info('Couriers desde AEROPOST: ' . json_encode($couriers));
 
         // 3. Obtenemos el courier de nuestro idTracking gracias al regex
         $courierSeleccionado = ServicioAeropost::ObtenerCourier($couriers, $tracking->IDTRACKING);
-        Log::info('CourierSeleccionado: ' . json_encode($courierSeleccionado));
+        Log::info('CourierSeleccionado: '.json_encode($courierSeleccionado));
 
         // 4. Al obtener el courier, nombreTienda va a ser: Tienda de {courier}
-        $nombreTienda = 'Tienda de ' . $courierSeleccionado['name'];
+        $nombreTienda = 'Tienda de '.$courierSeleccionado['name'];
 
         // 5. Enviar el request para crear la prealerta
         $idPrealerta = self::RequestRegistrarPrealerta(2979592, $courierSeleccionado['id'], $tracking->IDTRACKING, $nombreTienda, $valor, $descripcion);
-        Log::info('[ServicioAeropost,RP] idPrealerta ' . $idPrealerta);
+        Log::info('[ServicioAeropost,RP] idPrealerta '.$idPrealerta);
 
         // 6. Crear el trackingProveedor
-        $trackingProveedor = new TrackingProveedor();
+        $trackingProveedor = new TrackingProveedor;
         $trackingProveedor->IDTRACKING = $tracking->id;
         $trackingProveedor->IDPROVEEDOR = $idProveedor;
         $trackingProveedor->save();
 
         // 7. Crear la prealerta
-        $prealerta = new Prealerta();
+        $prealerta = new Prealerta;
         $prealerta->DESCRIPCION = $descripcion;
         $prealerta->VALOR = $valor;
-        $prealerta->NOMBRETIENDA =  $nombreTienda;
+        $prealerta->NOMBRETIENDA = $nombreTienda;
         $prealerta->IDCOURIER = $courierSeleccionado['id'];
-        $prealerta->IDPREALERTA =  $idPrealerta;
+        $prealerta->IDPREALERTA = $idPrealerta;
         $prealerta->IDTRACKINGPROVEEDOR = $trackingProveedor->id;
         $prealerta->save();
 
@@ -95,9 +93,8 @@ class ServicioAeropost
 
         $headers = [
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Basic ' . base64_encode(env('AEROPOST_CLIENT_ID') . ':' . env('AEROPOST_CLIENT_SECRET')),
+            'Authorization' => 'Basic '.base64_encode(env('AEROPOST_CLIENT_ID').':'.env('AEROPOST_CLIENT_SECRET')),
         ];
-
 
         // - Si hay error, intentarlo 2 veces mas
         $accessTokenRespuesta = null;
@@ -112,7 +109,7 @@ class ServicioAeropost
                     'gateway' => env('AEROPOST_GATEWAY'),
                 ]);
 
-            if (!$respuesta->successful()) {
+            if (! $respuesta->successful()) {
                 $intentos++;
             } else {
                 $accessTokenRespuesta = $respuesta;
@@ -120,18 +117,18 @@ class ServicioAeropost
             }
         }
 
-        if (!$accessTokenRespuesta) {
+        if (! $accessTokenRespuesta) {
             Log::info('[ServicioAP->ObtenerTokenAcceso] No se recibio el token de acceso');
-            throw new ExceptionAPTokenNoObtenido();
+            throw new ExceptionAPTokenNoObtenido;
         }
 
-
-        if (!$accessTokenRespuesta['access_token'] | !$accessTokenRespuesta['refresh_token']) {
+        if (! $accessTokenRespuesta['access_token'] | ! $accessTokenRespuesta['refresh_token']) {
             Log::info('[ServicioAP->ObtenerTokenAcceso] El request fue exitoso pero no esta el campo de access_token y/o refresh_token');
             throw new ExceptionAPTokenNoObtenido('El request fue exitoso pero no esta el campo de access_token y/o refresh_token');
         }
 
         Cache::put('aeropost_access_token', $accessTokenRespuesta['access_token'], $accessTokenRespuesta['expires_in'] - 60);
+
         return $accessTokenRespuesta['access_token'];
 
     }
@@ -151,9 +148,9 @@ class ServicioAeropost
         }
 
         // 2. Si no estan entonces hacer la llamada a AP API Couriers
-        $urlCourier = env('AEROPOST_URL_BASE') . '/api/couriers';
+        $urlCourier = env('AEROPOST_URL_BASE').'/api/couriers';
         $headers = [
-            'Authorization' => 'Bearer ' . Cache::get('aeropost_access_token'),
+            'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
         ];
 
         // 3. Si hay un error, hacer 3 intentos mas
@@ -162,8 +159,8 @@ class ServicioAeropost
 
             $respuesta = Http::withHeaders($headers)->get($urlCourier, []);
 
-            //cualquier status que no es 2xx
-            if (!$respuesta->successful()) {
+            // cualquier status que no es 2xx
+            if (! $respuesta->successful()) {
                 $intentos++;
             } else {
                 $couriers = $respuesta->json();
@@ -172,9 +169,9 @@ class ServicioAeropost
 
         }
 
-        if (sizeof($couriers) == 0) {
+        if (count($couriers) == 0) {
             Log::info('[ServicioAeropost,OC] error: Hubo un error en el request de couriers. No se trajo los couriers.');
-            throw new ExceptionAPCouriersNoObtenidos("Hubo un error en el request de couriers. No se trajo los couriers.");
+            throw new ExceptionAPCouriersNoObtenidos('Hubo un error en el request de couriers. No se trajo los couriers.');
         }
         // 4. Guardarlo en la cache por 1 dia
         Cache::put('aeropost_couriers', $couriers, now()->addDays(1));
@@ -194,8 +191,13 @@ class ServicioAeropost
         foreach ($couriers as $courier) {
             // 2. Obtenemos los regex de cada courier y los comparamos con el idTracking
             $regexActual = $courier['regex'];
+            Log::info($regexActual);
+            // - Se excluye el courier de id 0 => Other/Default que no tiene el campo de regex
+            if ($courier['id'] == 0 /* || $courier['id'] == 9 */) {
+                continue;
+            }
 
-            if (!$regexActual) {
+            if (! $regexActual) {
                 throw new ExceptionAPCourierNoObtenido('El elemento courier no contiene el campo regex');
             }
 
@@ -210,13 +212,13 @@ class ServicioAeropost
         }
 
         // 4. Si no cumple con ninguno, obtener el courier que es Other/Default (en los docs el default es el courierId 0)
-        if (!$courierSeleccionado) {
+        if (! $courierSeleccionado) {
             $courierDefault = null;
 
             foreach ($couriers as $courier) {
                 $courierId = $courier['id'];
 
-                if (!$courierId) {
+                if (! $courierId) {
                     Log::info('[ServicioAeropost,OC] El campo id en un elemento de courier no existe');
                     throw new ExceptionAPCourierNoObtenido('El campo id en un elemento de courier no existe');
                 }
@@ -226,7 +228,7 @@ class ServicioAeropost
                 }
             }
 
-            if (!$courierDefault) {
+            if (! $courierDefault) {
                 Log::info('[ServicioAeropost,OC] No se encontro el courier default');
                 throw new ExceptionAPCourierNoObtenido('No se encontro el courier default');
             }
@@ -247,34 +249,38 @@ class ServicioAeropost
         // 3.1 Si es error 500, entonces verificar con el GETPACKAGES si hay uno con el numeroTracking
         // 4. Verificar que todos los campos que necesito se encuentren (id principalmente)
 
-        $url = env('AEROPOST_URL_BASE') . '/api/pre-alerts?language=en';
+        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer ' . Cache::get('aeropost_access_token'),
+            'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];
 
-        // 2. Poner los datos necesarios
-        $respuesta = Http::withHeaders($headers)->post($url, [
-            "consigneeId" => $consigneeId,
-            "courierId" => $courierId,
-            "courierTracking" => $numeroTracking,
-            "storeName" => $nombreTienda,
-            "value" => $valor,
-            "description" => $descripcion
-        ]);
-        // investigar que es ConnectionException
-        Log::info('[ServicioAeropost,RRP] RequestRegistrarPrealerta: ' . json_encode($respuesta->json()));
-
-        // 3. Si algo falla, lanzar excepcion
-        if (!$respuesta->successful()) {
-            //falta log
-            throw new ExceptionAPRequestRegistrarPrealerta();
+        // - Se lanza el try para atrapar el ConnectionException (Si no se logro hacer conexión con el servidor de AP del t#do, duró mucho el request, etc) para envolverlo en la excepcion ExceptionAPRequestRegistrarPrealerta
+        try {
+            // 2. Poner los datos necesarios
+            $respuesta = Http::withHeaders($headers)->post($url, [
+                'consigneeId' => $consigneeId,
+                'courierId' => $courierId,
+                'courierTracking' => $numeroTracking,
+                'storeName' => $nombreTienda,
+                'value' => $valor,
+                'description' => $descripcion,
+            ]);
+            // investigar que es ConnectionException
+            Log::info('[ServicioAeropost,RRP] RequestRegistrarPrealerta: '.json_encode($respuesta->json()));
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPRequestRegistrarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
+        }
+        // 3. Si algo falla (porque el servidor de AP nos lo envía, ya sea error o no), lanzar excepcion
+        if (! $respuesta->successful()) {
+            // falta log
+            throw new ExceptionAPRequestRegistrarPrealerta;
         }
 
         // 4. Verificar que todos los campos que necesito se encuentren (id principalmente)
-        if (!$respuesta['id']) {
+        if (! $respuesta['id']) {
             throw new ExceptionAPRequestRegistrarPrealerta(' El request se dio con exito pero no trae el campo id');
         }
 

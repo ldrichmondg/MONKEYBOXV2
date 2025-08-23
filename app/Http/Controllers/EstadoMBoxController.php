@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EstadoMBoxConsultaVariosRequest;
 use App\Services\ServicioEstadoMBox;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class EstadoMBoxController extends Controller
@@ -23,7 +22,7 @@ class EstadoMBoxController extends Controller
             return response()->json($estados);
 
         } catch (\Exception $e) {
-            Log::error('[EstadoMBoxController->DetallesJson] error:' . $e);
+            Log::error('[EstadoMBoxController->DetallesJson] error:'.$e);
 
             return response()->json([
                 'status' => 'error',
@@ -31,6 +30,4 @@ class EstadoMBoxController extends Controller
             ], 500); // 500 = Internal Server Error
         }
     }
-
 }
-

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Diccionarios;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Diccionarios;
+
 class Tracking extends Model
 {
     use SoftDeletes;
@@ -45,7 +46,7 @@ class Tracking extends Model
         'IDUSUARIO',
         'FECHAENTREGA',
         'RUTAFACTURA',
-        'ESTADOMBOX'
+        'ESTADOMBOX',
     ];
 
     /**
@@ -57,9 +58,8 @@ class Tracking extends Model
         'PESO' => 'decimal:3',
         'DIASTRANSITO' => 'integer',
         'ENTREGADOCLIENTE' => 'boolean',
-        'ENTREGADOCOSTARICA' => 'boolean'
+        'ENTREGADOCOSTARICA' => 'boolean',
     ];
-
 
     /**
      * The attributes that should be mutated to dates.
@@ -91,16 +91,19 @@ class Tracking extends Model
 
     public function courrierNombreAId($nombreCourrier)
     {
-        $listaCourrier = Diccionarios::getDiccionario("courrier");
+        $listaCourrier = Diccionarios::getDiccionario('courrier');
         $objCourrier = array_filter($listaCourrier, fn ($obj) => $obj->NOMBRE === $nombreCourrier);
-        return empty($objCourrier) ? "" : current($objCourrier)->id;
+
+        return empty($objCourrier) ? '' : current($objCourrier)->id;
     }
 
-    public function historialesT():HasMany
+    public function historialesT(): HasMany
     {
-        return $this->hasMany(TrackingHistorial::class, 'IDTRACKING', 'id')-> whereNull('deleted_at') -> orderBy('FECHA', 'asc');
+        return $this->hasMany(TrackingHistorial::class, 'IDTRACKING', 'id')->whereNull('deleted_at')->orderBy('FECHA', 'asc');
     }
-    public function ColorEstado($cotaRica,$entregado, $transito){
+
+    public function ColorEstado($cotaRica, $entregado, $transito)
+    {
         return match (true) {
             $entregado => 'success',
             $cotaRica => 'danger',
@@ -108,7 +111,9 @@ class Tracking extends Model
             default => '',
         };
     }
-    public function DescripcionEstado($cotaRica,$entregado, $transito){
+
+    public function DescripcionEstado($cotaRica, $entregado, $transito)
+    {
 
         return match (true) {
             $entregado => 'Ya Entregado',
@@ -117,6 +122,7 @@ class Tracking extends Model
             default => '',
         };
     }
+
     public function UltimoPaisEstado()
     {
         $ultimoEstado = $this->historialesT
@@ -126,7 +132,8 @@ class Tracking extends Model
 
         return $ultimoEstado ? $ultimoEstado->PAISESTADO : ''; // Retorna el valor o un valor por defecto si no se encuentra
     }
-   // En App\Models\Tracking.php
+
+    // En App\Models\Tracking.php
     public function UltimoPaisEstadoObj()
     {
         $ultimoEstado = $this->historialesT
@@ -137,12 +144,13 @@ class Tracking extends Model
         return $ultimoEstado ?: null;
     }
 
-    public function estadoMBox(): BelongsTo{
+    public function estadoMBox(): BelongsTo
+    {
         return $this->belongsTo(EstadoMBox::class, 'ESTADOMBOX', 'DESCRIPCION');
     }
 
-    public function trackingProveedor(): HasOne{
+    public function trackingProveedor(): HasOne
+    {
         return $this->hasOne(TrackingProveedor::class, 'IDTRACKING', 'id');
     }
-
 }

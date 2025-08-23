@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Log;
 
 class ServicioEstadoMBox
 {
-
     /**
-     * @param string[] $estados
+     * @param  string[]  $estados
      * @return EstadoMBox[]|null
      */
-    public static function ObtenerEstadosMBox(array $estados): ?array {
+    public static function ObtenerEstadosMBox(array $estados): ?array
+    {
 
-        try{
+        try {
 
             $estados = DB::table('estadombox')
                 ->select('DESCRIPCION', 'COLORCLASS')
@@ -23,9 +23,10 @@ class ServicioEstadoMBox
 
             return $estados->toArray();
 
-        }catch (\Throwable $th){
+        } catch (\Throwable $th) {
 
             Log::error('[ServicioEstadoMBox->ObtenerEstadosMBox] error:'.$th);
+
             return null;
         }
     }

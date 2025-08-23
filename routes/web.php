@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use \App\Http\Controllers\TrackingController;
 
-# Nomenclatura a usar:
-# /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
+// Nomenclatura a usar:
+// /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -15,7 +15,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
-
 
 });
 

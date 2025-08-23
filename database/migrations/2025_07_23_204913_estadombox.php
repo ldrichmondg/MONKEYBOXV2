@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('estadombox', function (Blueprint $table) {
-            $table->string('DESCRIPCION',35)->primary();
+            $table->string('DESCRIPCION', 35)->primary();
             $table->string('COLORCLASS', 100);
         });
     }

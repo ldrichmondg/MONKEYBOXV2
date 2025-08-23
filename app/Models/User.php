@@ -2,20 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Mail;
 use App\Mail\RecoverPassword;
-use Carbon\Carbon;
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Auth\Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 
-class User extends Model implements AuthenticatableContract,  CanResetPassword
+class User extends Model implements AuthenticatableContract, CanResetPassword
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use Authenticatable, HasFactory, Notifiable, SoftDeletes;
@@ -60,7 +58,6 @@ class User extends Model implements AuthenticatableContract,  CanResetPassword
     {
         return $this->password;
     }
-
 
     public function hasRole(string $perfilIndicado): bool
     {
@@ -112,8 +109,4 @@ class User extends Model implements AuthenticatableContract,  CanResetPassword
     {
         return mb_substr($this->APELLIDOS, 0, 1, 'UTF-8').'.';
     }
-
-
-
-
 }

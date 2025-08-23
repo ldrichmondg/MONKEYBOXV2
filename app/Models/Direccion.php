@@ -16,6 +16,7 @@ class Direccion extends Model
      * @var string
      */
     protected $table = 'direccion';
+
     /**
      * The primary key for the model.
      *
@@ -34,7 +35,7 @@ class Direccion extends Model
         'CODIGOPOSTAL',
         'IDCLIENTE',
         'PAISESTADO',
-        'LINKWAZE'
+        'LINKWAZE',
     ];
 
     /**
@@ -73,11 +74,13 @@ class Direccion extends Model
         return $this->hasMany(Tracking::class, 'IDDIRECCION');
     }
 
-    public function tipoTexto(){
+    public function tipoTexto()
+    {
         $tiposDireccion = Diccionarios::getDiccionario('tiposDirecciones');
         $objTipo = array_filter($tiposDireccion, fn ($obj) => $obj->id === $this->TIPO);
         $objTipo = array_values($objTipo); // Reindexa para tener acceso con [0]
+
         return $objTipo[0]->NOMBRE;
-        
+
     }
 }

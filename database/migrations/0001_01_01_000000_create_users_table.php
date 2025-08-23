@@ -20,15 +20,15 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('CEDULA');
-            $table->string('NOMBRE',60);
-            $table->string('APELLIDOS',40)->nullable();
+            $table->string('NOMBRE', 60);
+            $table->string('APELLIDOS', 40)->nullable();
             $table->string('EMPRESA', 120)->nullable();
             $table->unsignedInteger('TELEFONO')->nullable();
             $table->string('email')->unique()->nullable();
             $table->unsignedBigInteger('IDPERFIL');
             $table->foreign('IDPERFIL')->references('id')->on('perfil');
             $table->softDeletes();
-            //defaults laravel
+            // defaults laravel
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

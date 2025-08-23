@@ -41,7 +41,7 @@ class RegisteredUserController extends Controller
             'CEDULA' => $request->cedula,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'IDPERFIL'=> 1
+            'IDPERFIL' => 1,
         ]);
 
         event(new Registered($user));

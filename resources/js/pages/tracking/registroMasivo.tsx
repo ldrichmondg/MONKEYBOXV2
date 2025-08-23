@@ -38,6 +38,7 @@ import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
 import { Configuracion } from '@/types/configuracion';
 import { EstatusTable, WithActions } from '@/types/table';
 import { TrackingConPrealertaBaseProveedor, TrackingConsultadosTable } from '@/types/tracking';
+import { InputError } from '@/types/input';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -296,7 +297,7 @@ export default function RegistroMasivo() {
     const [btnBuscarActive, setBtnBuscarActive] = useState(true); //el valor real es false
     const [loading, setLoading] = useState(false); //debe estar como false
     const [showSpinner, setShowSpinner] = useState(false);
-    const [proveedores, setProveedores] = useState<ComboBoxItem[]>();
+    const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
     const [preealertando, setPreealertando] = useState(false);
     const [puedePreealertar, setPuedePreealertar] = useState(false);
     const [trackings, setTrackings] = useState<TrackingConsultadosTable[]>([]);
@@ -326,13 +327,6 @@ export default function RegistroMasivo() {
         setBtnBuscarActive(CamposLlenos(nuevosCards));
     };
 
-    //useEffect para cards
-    useEffect(() => {
-        cards.forEach((card) => {
-            console.log('#Card: ' + card.idCard + ' idCliente: ' + card.idCliente + ' trackings: ' + card.trackings + ' ');
-        });
-    }, [cards]);
-
     //useEffect parra puedePrealertar
     useEffect(() => {
         VerificarPuedePreealertar(setPuedePreealertar, trackings);
@@ -345,17 +339,20 @@ export default function RegistroMasivo() {
         getCoreRowModel: getCoreRowModel(),
     });
 
-    function ActualizarTracking(e, idTracking: number, campo: string) {
+    function ActualizarTracking(e: React.ChangeEvent<HTMLInputElement>, idTracking: string, campo: string) {
         //campo se usa para poner si es valor
-        const valorInput = e.target.value;
+        let valor: number;
+        let descripcion: string;
+        if (campo == 'descripcion') descripcion = e.target.value;
+        else if (campo == 'valor') valor = Number(e.target.value);
 
         setTrackings((prev) =>
             prev.map((tracking) =>
                 tracking.idTracking === idTracking
                     ? {
                           ...tracking,
-                          descripcion: campo == 'descripcion' ? valorInput : tracking.descripcion,
-                          valor: campo == 'valor' ? valorInput : tracking.valor,
+                          descripcion: campo == 'descripcion' ? descripcion : tracking.descripcion,
+                          valor: campo == 'valor' ? valor : tracking.valor,
                       }
                     : tracking,
             ),
@@ -363,11 +360,17 @@ export default function RegistroMasivo() {
     }
 
     //donde se va a enviar el formulario
-    async function EnviarFormulario(): void {
+    async function EnviarFormulario(): Promise<void> {
         //1. Insertar Datos en la tabla
         //2. hacer el request de ParcelsApp
         try {
-            const trackingsNuevos = await InsertarDatosTabla(setBtnBuscarActive, setShowSpinner, setTrackings, setLoading, cards); //se crea porque pasar trackings de golpe react tiene la lista vacia
+            const trackingsNuevos: TrackingConsultadosTable[] = await InsertarDatosTabla(
+                setBtnBuscarActive,
+                setShowSpinner,
+                setTrackings,
+                setLoading,
+                cards,
+            ); //se crea porque pasar trackings de golpe react tiene la lista vacia
 
             await RegistrarTrackings(trackingsNuevos, setTrackings);
         } catch (error) {
@@ -419,7 +422,7 @@ export default function RegistroMasivo() {
                                         className={'flex items-center border border-gray-100 bg-transparent text-base text-gray-500'}
                                         variant="outline"
                                         size="lg"
-                                        disabled={!puedePreealertar || preealertando ? 'disabled' : ''}
+                                        disabled={!puedePreealertar || preealertando}
                                         onClick={() => PreealertarTracking(trackings, setTrackings, setPreealertando)}
                                     >
                                         {!preealertando ? (
@@ -470,10 +473,10 @@ export default function RegistroMasivo() {
                                                                             ? row.original.valor
                                                                             : (row.original.descripcion ?? '')
                                                                     }
-                                                                    disabled={preealertando ? 'disabled' : ''}
-                                                                    error={
-                                                                        row.original.errores.find((error) => error.name == cell.column.id+'-'+row.original.idTracking)
-                                                                    }
+                                                                    disabled={preealertando}
+                                                                    error={row.original.errores.find(
+                                                                        (error) => error.name == cell.column.id + '-' + row.original.idTracking,
+                                                                    )}
                                                                 />
                                                             ) : cell.column.id == 'nombreProveedor' ? (
                                                                 <Combobox
@@ -481,19 +484,12 @@ export default function RegistroMasivo() {
                                                                     placeholder="Selec. proveedor..."
                                                                     classNames="w-60 p-6"
                                                                     onChange={(idSeleccionado) =>
-                                                                        AgregarProveedor(
-                                                                            idSeleccionado,
-                                                                            proveedores,
-                                                                            row.original,
-                                                                            trackings,
-                                                                            setPuedePreealertar,
-                                                                            setTrackings,
-                                                                        )
+                                                                        AgregarProveedor(idSeleccionado, proveedores, row.original, setTrackings)
                                                                     }
-                                                                    isActive={row.original.trackingCompleto && !preealertando}
-                                                                    error={
-                                                                        row.original.errores.find((error) => error.name == 'idProveedor-'+row.original.idTracking)
-                                                                    }
+                                                                    isActive={row.original.trackingCompleto == true && !preealertando}
+                                                                    error={row.original.errores.find(
+                                                                        (error) => error.name == 'idProveedor-' + row.original.idTracking,
+                                                                    )}
                                                                 ></Combobox>
                                                             ) : (
                                                                 flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -564,7 +560,7 @@ async function InsertarDatosTabla(
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     cards: CardData[],
-): TrackingConsultadosTable[] {
+): Promise<TrackingConsultadosTable[]> {
     //0. Mostrar el spinner
     //1. Hacer el request del archivo de configuracion para obtener el valor
     //2. Pasar la información de los cards a objetos tracking
@@ -572,23 +568,29 @@ async function InsertarDatosTabla(
     //4. mostrar la tabla y quitar el spinner
 
     try {
-        const trackings = [];
+        const trackings: TrackingConsultadosTable[] = [];
         //0. Mostrar el spinner
         setBtnBuscarActive(false); //es para que se desactive el btn de buscar trackings
         setShowSpinner(true);
 
         //1. Hacer el request del archivo de configuracion para obtener el valor
-        const configuracion: Configuracion = await obtenerConfiguracion();
-        const estadoSinRegistrar: EstatusTable = await obtenerEstatusMBox(['Sin Registrar']);
+        const configuracion: Configuracion | null = await obtenerConfiguracion();
+        let estadoSinRegistrar: EstatusTable[] | null = await obtenerEstatusMBox(['Sin Registrar']);
 
         if (configuracion == null) {
-            alert('ACORDATE PONER UN MENSAJE DE ERROR');
-            return;
+            ErrorModal('Error al cargar la configuración', 'No se cargo el campo valor para ponerlo en la prealerta');
+            return [];
         }
 
         if (estadoSinRegistrar == null) {
-            alert('ACORDATE PONER UN MENSAJE DE ERROR');
-            return;
+            /* Si el estado no se carga, entonces se usa el que se sabe */
+            estadoSinRegistrar = [
+                {
+                    descripcion: 'Sin Preealertar',
+                    colorClass: 'bg-transparent border-pink-300 text-pink-300',
+                },
+            ];
+            return [];
         }
 
         //2. Pasar la información de los cards a objetos tracking
@@ -609,7 +611,6 @@ async function InsertarDatosTabla(
                     desde: null,
                     hasta: null,
                     destino: null,
-                    couriers: '',
                     errores: [
                         {
                             name: 'descripcion-' + idTracking,
@@ -621,6 +622,7 @@ async function InsertarDatosTabla(
                             name: 'idProveedor-' + idTracking,
                         },
                     ],
+                    actions: [],
                 };
                 setTrackings((prev) => prev.concat(tracking));
                 trackings.push(tracking);
@@ -634,7 +636,7 @@ async function InsertarDatosTabla(
         return trackings;
     } catch (e) {
         console.log('[registroMasivo->IDT] error: ' + e);
-        return null;
+        return [];
     }
 }
 
@@ -721,7 +723,7 @@ async function RegistrarTrackings(
                                           descripcion: responseTracking.estatus.descripcion,
                                           colorClass: responseTracking.estatus.colorClass,
                                       },
-                                      actions: responseTracking.acciones,
+                                      actions: responseTracking.actions,
                                       trackingCompleto: responseTracking.trackingCompleto,
                                   }
                                 : item,
@@ -755,11 +757,9 @@ async function RegistrarTrackings(
 // #############################
 
 function AgregarProveedor(
-    idProveedor?: number,
+    idProveedor: number,
     proveedores: ComboBoxItem[],
     trackingSeleccionado: TrackingConsultadosTable,
-    trackings: TrackingConsultadosTable[],
-    setPuedePreealertar: React.Dispatch<React.SetStateAction<boolean>>,
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
 ) {
     // 1. Se ingresa el idProveedor y nombreProveedor al tracking
@@ -789,7 +789,7 @@ function AgregarProveedor(
 // CARGAR PROVEEDORES
 // ###########
 
-async function cargarProveedores(setProveedores: React.Dispatch<React.SetStateAction<ComboBoxItem>>) {
+async function cargarProveedores(setProveedores: React.Dispatch<React.SetStateAction<ComboBoxItem[]>>) {
     const proveedores: ComboBoxItem[] = await comboboxProveedor();
     setProveedores(proveedores);
 }
@@ -804,7 +804,7 @@ function VerificarPuedePreealertar(setPuedePreealertar: React.Dispatch<React.Set
     try {
         const cantidadTrackingsCompletos = trackings.filter((tracking) => tracking.trackingCompleto == true).length;
         const cantidadTrackingsParaPreealertar = trackings.filter(
-            (tracking) => tracking.idProveedor != null && tracking.valor !== '' && tracking.descripcion !== '',
+            (tracking) => tracking.idProveedor != null && tracking.valor !== -1 && tracking.descripcion !== '',
         ).length;
 
         const puedePreealertar: boolean = cantidadTrackingsCompletos == cantidadTrackingsParaPreealertar && cantidadTrackingsParaPreealertar != 0;
@@ -825,14 +825,14 @@ async function PreealertarTracking(
     trackings: TrackingConsultadosTable[],
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
     setPreealertando: React.Dispatch<React.SetStateAction<boolean>>,
-)
-{
+) {
     // 1. Se va a poner la variable en preealertando, para indicar que se esta prealertando
     // 2. Se va a recorrer cada tracking
     // 2.1. Se va a cambiar el estado de sin preealertar a preealertando
     // 2.2  Se envia un request de ese tracking para hacerle la prealerta
     // 3. Si se logro la preealerta, se pone el estado como preealertado y se pone el T.Prov (por el momento si es de aeropost)
     // 3.1 Si no se logra, poner en estado no se logro prealerta ( => su estado sigue siendo sin preealertado)
+    // 4.
     try {
         // 1. Se va a poner la variable en preealertando, para indicar que se esta prealertando
         setPreealertando(true);
@@ -857,63 +857,84 @@ async function PreealertarTracking(
 
             // 2.2  Se envia un request de ese tracking para hacerle la prealerta
             const trackingParaPrealertar: TrackingConPrealertaBaseProveedor = {
+                ...trackingFor,
                 id: trackingFor.id,
                 idTracking: trackingFor.idTracking,
                 nombreCliente: trackingFor.nombreCliente,
                 descripcion: trackingFor.descripcion,
                 proveedor: trackingFor.trackingProveedor,
-                idProveedor: trackingFor.idProveedor,
+                idProveedor: trackingFor.idProveedor ?? -1,
                 trackingProveedor: trackingFor.trackingProveedor,
                 prealerta: {
+                    id: -1 /* aun no se sabe porque no se ha prealertado aun */,
                     valor: trackingFor.valor,
                     descripcion: trackingFor.descripcion,
+                    idTrackingProveedor: -1 /* aun no se sabe porque no se ha prealertado aun */,
                 },
                 errores: trackingFor.errores,
-                estatus: trackingFor.estatus
+                estatus: trackingFor.estatus,
             };
 
-            const trackingRespuesta: TrackingConPrealertaBaseProveedor = await PrealertarTracking(trackingParaPrealertar);
-            console.log(trackingRespuesta);
-            // 3. Si se logro la preealerta, se pone el estado como preealertado y se pone el T.Prov (por el momento si es de aeropost)
-            // - Solo para sincronizar los errores
-            setTrackings((prev) =>
-                prev.map((tracking) => {
-                    if (trackingParaPrealertar.idTracking === tracking.idTracking) {
-                        // Creamos un nuevo array de errores, actualizando mensajes donde corresponda
-                        const erroresActualizados: InputError[] = tracking.errores.map((errorActual) => {
-                            // Buscamos en trackingRespuesta un error cuyo name sea prefijo del errorActual.name
-                            const errorRespuesta: InputError = trackingRespuesta.errores.find((errResp) =>
-                                errorActual.name.startsWith(errResp.name)
-                            );
+            /* Un try por si ocurre un problema al recibir el tracking prealertado */
+            try {
+                const trackingRespuesta: TrackingConPrealertaBaseProveedor | null = await PrealertarTracking(trackingParaPrealertar);
 
-                            if (errorRespuesta) {
-                                return {
-                                    ...errorActual,
-                                    message: errorRespuesta.message, // Actualizamos el mensaje con el del response
-                                };
-                            }
+                // 3.1 Si no se logra, poner en estado no se logro prealerta ( => su estado sigue siendo sin preealertado)
+                if (!trackingRespuesta) {
+                    throw new Error('La API devolvió null en lugar de un tracking válido');
+                }
 
-                            // Si no coincide, retornamos el errorActual sin cambio
-                            return errorActual;
-                        });
+                // 3. Si se logro la preealerta, se pone el estado como preealertado y se pone el T.Prov (por el momento si es de aeropost)
+                // - Solo para sincronizar los errores
+                setTrackings((prev) =>
+                    prev.map((tracking) => {
+                        if (trackingParaPrealertar.idTracking === tracking.idTracking) {
+                            // Creamos un nuevo array de errores, actualizando mensajes donde corresponda
+                            const erroresActualizados: InputError[] = tracking.errores.map((errorActual) => {
+                                // Buscamos en trackingRespuesta un error cuyo name sea prefijo del errorActual.name
+                                const errorRespuesta: InputError | undefined = trackingRespuesta.errores.find((errResp) =>
+                                    errorActual.name.startsWith(errResp.name),
+                                );
 
-                        return {
-                            ...tracking,
-                            errores: erroresActualizados,
-                            estatus: {
-                                descripcion: trackingRespuesta.estatus.descripcion,
-                                colorClass: trackingRespuesta.estatus.colorClass,
-                            },
-                        };
-                    }
-                    return tracking;
-                })
-            );
+                                if (errorRespuesta) {
+                                    return {
+                                        ...errorActual,
+                                        message: errorRespuesta.message, // Actualizamos el mensaje con el del response
+                                    };
+                                }
 
-            // - Verificar si hubo un error de validacion de idTracking
-            const errorIdTracking = trackingRespuesta.errores.find( (error) => error.name == 'idTracking');
-            if(errorIdTracking){
-                ErrorModal('Error al subir la prealerta', 'Lo sentimos hubo un error al subir la prealerta. Indica el siguiente mensaje al departamento de TI: No se enlazó idTracking')
+                                // Si no coincide, retornamos el errorActual sin cambio
+                                return errorActual;
+                            });
+
+                            return {
+                                ...tracking,
+                                errores: erroresActualizados,
+                                estatus: {
+                                    descripcion: trackingRespuesta.estatus.descripcion,
+                                    colorClass: trackingRespuesta.estatus.colorClass,
+                                },
+                            };
+                        }
+                        return tracking;
+                    }),
+                );
+
+                // - Verificar si hubo un error de validacion de idTracking
+                const errorIdTracking = trackingRespuesta.errores.find((error) => error.name == 'idTracking');
+                if (errorIdTracking) {
+                    ErrorModal(
+                        'Error al subir la prealerta',
+                        'Lo sentimos hubo un error al subir la prealerta. Indica el siguiente mensaje al departamento de TI: No se enlazó idTracking',
+                    );
+                }
+
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (e) {
+                ErrorModal(
+                    'No se obtuvo respuesta del tracking que se prealertó',
+                    'No se obtuvo respuesta del tracking a prealertar. Intente de nuevo o comuniquese con el departamento de TI.',
+                );
             }
             /*
              trackingFor.idTracking == tracking.idTracking && tracking.trackingCompleto

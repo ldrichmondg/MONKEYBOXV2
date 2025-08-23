@@ -1,15 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\EstadoMBoxController;
-use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\PrealertaController;
+use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\TrackingController;
+use Illuminate\Support\Facades\Route;
 
-# Nomenclatura a usar:
-# /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
+// Nomenclatura a usar:
+// /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
 
 // RUTAS TRACKING
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -23,8 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/configuracion/consultar/json', [ConfiguracionController::class, 'Consultar'])->name('usuario.configuracion.consultar.json');
 });
 
-
-//RUTAS ESTADOMBOX
+// RUTAS ESTADOMBOX
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/estadoMBox/detalles/json', [EstadoMBoxController::class, 'DetallesJson'])->name('usuario.estadoMBox.detalles.json');
 });
@@ -38,5 +36,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/prealerta/registro/json', [PrealertaController::class, 'RegistroJson'])->name('usuario.prealerta.registro.json');
 });
-
-

@@ -3,6 +3,7 @@
 class defaultObject
 {
     public $NOMBRE;
+
     public $id;
 
     public function __construct($nombre, $id)
@@ -14,7 +15,9 @@ class defaultObject
 class Diccionarios
 {
     public static $courrier = [];
+
     public static $provincias = [];
+
     public static $tiposDirecciones = [];
 
     public static function initialize()
@@ -41,7 +44,7 @@ class Diccionarios
             new defaultObject('Parcelforce', 18),
             new defaultObject('EMS', 19),
             new defaultObject('GoFo Express', 20),
-            new defaultObject('', 21),// Definir con luis
+            new defaultObject('', 21), // Definir con luis
 
         ];
         self::$provincias = [
@@ -51,7 +54,7 @@ class Diccionarios
             new defaultObject('Limón', 4),
             new defaultObject('Puntarenas', 5),
             new defaultObject('San José', 6),
-            new defaultObject('Alajuela', 7)
+            new defaultObject('Alajuela', 7),
         ];
 
         self::$tiposDirecciones = [

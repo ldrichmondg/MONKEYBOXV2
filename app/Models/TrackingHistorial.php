@@ -1,17 +1,18 @@
 <?php
+
 namespace App\Models;
 
-
+use Diccionarios;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Diccionarios;
 
 class TrackingHistorial extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $table = 'historialtracking';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -25,20 +26,19 @@ class TrackingHistorial extends Model
         'FECHA',
         'IDCOURIER',
         'COSTARICA',
-        'CLIENTE'
+        'CLIENTE',
     ];
+
     protected $dates = ['created_at', 'updated_at', 'deleted_at'];
 
     public function courrier()
     {
-        $listaCourrier = Diccionarios::getDiccionario("courrier");
+        $listaCourrier = Diccionarios::getDiccionario('courrier');
         $objCourrier = array_filter($listaCourrier, fn ($obj) => $obj->id === $this->IDCOURIER);
 
-        return empty($objCourrier) ? "" : current($objCourrier)->NOMBRE;
+        return empty($objCourrier) ? '' : current($objCourrier)->NOMBRE;
     }
 
-    
-    
     /**
      * Obtener el tracking asociado con este historial.
      */

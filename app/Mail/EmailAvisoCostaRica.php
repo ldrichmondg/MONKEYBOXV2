@@ -4,16 +4,20 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
 class EmailAvisoCostaRica extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $equivocado;
+
     public $tracking;
+
     public $usuario;
+
     use Queueable, SerializesModels;
 
     /**
@@ -26,6 +30,7 @@ class EmailAvisoCostaRica extends Mailable
                 subject: 'Corrección de Notificación: Tu paquete llego a Costa Rica',
             );
         }
+
         return new Envelope(
             subject: 'Tu paquete llego a Costa Rica',
         );
@@ -34,8 +39,8 @@ class EmailAvisoCostaRica extends Mailable
     /**
      * Create a new message instance.
      *
-     * @param object $tracking Información del tracking eliminado.
-     * @param object $usuario Información del usuario asociado.
+     * @param  object  $tracking  Información del tracking eliminado.
+     * @param  object  $usuario  Información del usuario asociado.
      */
     public function __construct($usuario, $tracking, $equivocado = false)
     {
@@ -43,12 +48,13 @@ class EmailAvisoCostaRica extends Mailable
         $this->equivocado = $equivocado;
         $this->tracking = $tracking;
     }
+
     public function content(): Content
     {
         if ($this->equivocado) {
             return new Content(
                 markdown: 'mail.aviso-equivocado-costarica',
-                with:[
+                with: [
                     'tracking' => $this->tracking,
                     'usuario' => $this->usuario,
                 ],
@@ -57,11 +63,10 @@ class EmailAvisoCostaRica extends Mailable
 
         return new Content(
             markdown: 'mail.aviso-costarica',
-            with:[
+            with: [
                 'tracking' => $this->tracking,
                 'usuario' => $this->usuario,
             ]
         );
     }
-    
 }

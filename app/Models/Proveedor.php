@@ -6,11 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Proveedor extends Model
 {
-     protected $fillable = ['NOMBRE'];
+    protected $fillable = ['NOMBRE'];
 
-     public $timestamps = false;
+    public $timestamps = false;
 
-     protected $table = 'proveedor';
-
-
+    protected $table = 'proveedor';
 }

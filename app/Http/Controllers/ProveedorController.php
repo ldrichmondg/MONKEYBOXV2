@@ -4,20 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Proveedor;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class ProveedorController extends Controller
 {
-    public function ConsultaJson(): JsonResponse{
+    public function ConsultaJson(): JsonResponse
+    {
 
-        try{
+        try {
 
             $proveedores = Proveedor::all();
+
             return response()->json($proveedores);
 
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
 
             Log::error('ProveedorController->ConsultarJson->error:'.$e);
 

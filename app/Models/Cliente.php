@@ -32,7 +32,7 @@ class Cliente extends Model
     protected $fillable = [
         'CASILLERO',
         'IDUSUARIO',
-        'FECHANACIMIENTO'
+        'FECHANACIMIENTO',
     ];
 
     /**

@@ -16,6 +16,7 @@ class ListenerEnviarCorreoEliminaTracking
     {
         try {
             Mail::to($evento->usuario->email)->send(new EmailEliminacionTracking($evento->tracking, $evento->usuario));
+
             return true; // allow event propagation
         } catch (Exception $e) {
             // Handle the exception

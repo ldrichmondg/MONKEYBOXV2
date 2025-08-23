@@ -17,21 +17,21 @@ class SeederDireccion extends Seeder
             'TIPO' => 1,
             'CODIGOPOSTAL' => 10294,
             'IDCLIENTE' => 1,
-            'PAISESTADO' => 'Cartago, Paraíso'
+            'PAISESTADO' => 'Cartago, Paraíso',
         ];
         $direccion2 = [
             'DIRECCION' => 'Tejar',
             'TIPO' => 2,
             'CODIGOPOSTAL' => 10294,
             'IDCLIENTE' => 1,
-            'PAISESTADO' => 'Cartago, El Guarco'
+            'PAISESTADO' => 'Cartago, El Guarco',
         ];
         $direccion3 = [
             'DIRECCION' => 'Guadalupe',
             'TIPO' => 1,
             'CODIGOPOSTAL' => 30106,
             'IDCLIENTE' => 2,
-            'PAISESTADO' => 'Cartago, Guadalupe'
+            'PAISESTADO' => 'Cartago, Guadalupe',
         ];
 
         Direccion::create($direccion);

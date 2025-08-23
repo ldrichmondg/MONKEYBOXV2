@@ -6,31 +6,30 @@ use App\DataTransformers\ModelToIdDescripcionDTO;
 use App\Events\EventoRegistroCliente;
 use App\Models\Cliente;
 use App\Models\Direccion;
+use App\Models\Enum\TipoCardDirecciones;
+use App\Models\Enum\TipoDirecciones;
+use App\Models\Tracking;
 use App\Models\User;
 use Exception;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\Enum\TipoCardDirecciones;
-use App\Models\Enum\TipoDirecciones;
-use App\Models\Tracking;
-use App\Models\TrackingHistorial;
-use Diccionarios;
 
 class ServicioCliente
 {
-
-    public static function ObtenerClientesSimples(): array{
-        try{
+    public static function ObtenerClientesSimples(): array
+    {
+        try {
             $clientes = DB::table('cliente')
                 ->join('users', 'users.id', '=', 'cliente.IDUSUARIO')
-                ->select('cliente.id', 'users.NOMBRE as NOMBRE', 'users.APELLIDOS as APELLIDOS' )
+                ->select('cliente.id', 'users.NOMBRE as NOMBRE', 'users.APELLIDOS as APELLIDOS')
                 ->get();
 
             return ModelToIdDescripcionDTO::map($clientes);
-        }catch(Exception $e){
-            Log::error("[ServicioCliente -> ObtenerClientesSimples] Error: ".$e->getMessage());
+        } catch (Exception $e) {
+            Log::error('[ServicioCliente -> ObtenerClientesSimples] Error: '.$e->getMessage());
+
             return [];
         }
     }
@@ -45,7 +44,7 @@ class ServicioCliente
                 ->orderBy('u.NOMBRE')
                 ->with('usuario');
 
-            if (!empty($query)) {
+            if (! empty($query)) {
 
                 $clientes->where(function ($q) use ($query) {
                     $q->orWhereHas('usuario', function ($subq) use ($query) {
@@ -63,6 +62,7 @@ class ServicioCliente
         } catch (\Throwable $e) {
             // Opcional: loguear el error
             Log::error('Error en ServicioCliente::Filtro', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -71,14 +71,14 @@ class ServicioCliente
     {
         try {
 
-            //contaseña
+            // contaseña
             $contraseña = bin2hex(random_bytes(8));
             $usuario = User::create([
                 'CEDULA' => $request->cedula,
                 'NOMBRE' => $request->nombre,
                 'email' => $request->email,
                 'password' => $contraseña,
-                'IDPERFIL' => 3, //id del cliente
+                'IDPERFIL' => 3, // id del cliente
                 'TELEFONO' => $request->telefono,
                 'APELLIDOS' => $request->apellidos,
             ]);
@@ -99,7 +99,7 @@ class ServicioCliente
                 }
             }
             // Si no se encontró una dirección principal, asignar la primera dirección como principal
-            if (!$tienePrincipal && count($request->input('direcciones')) > 0) {
+            if (! $tienePrincipal && count($request->input('direcciones')) > 0) {
                 $direcciones[0]['tipo'] = 1;  // Asignar TIPO = 1 a la primera dirección
             }
 
@@ -110,7 +110,7 @@ class ServicioCliente
                     'CODIGOPOSTAL' => $direccion['codigoPostal'],
                     'IDCLIENTE' => $cliente->id,
                     'PAISESTADO' => $direccion['paisEstado'],
-                    'LINKWAZE' => $direccion['linkWaze']
+                    'LINKWAZE' => $direccion['linkWaze'],
                 ]);
             }
 
@@ -120,8 +120,9 @@ class ServicioCliente
             return $cliente;
         } catch (Exception $e) {
             // Opcional: loguear el error
-            //var_dump($e, $e->getMessage());
+            // var_dump($e, $e->getMessage());
             Log::error('Error en ServicioCliente::Crear', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -139,7 +140,7 @@ class ServicioCliente
             $item->TELEFONO = $request->telefono;
             $item->save();
 
-            $cliente = Cliente::where("IDUSUARIO", $request->idUsuario)->first();
+            $cliente = Cliente::where('IDUSUARIO', $request->idUsuario)->first();
             $cliente->CASILLERO = $request->casillero;
             $cliente->save();
 
@@ -153,11 +154,11 @@ class ServicioCliente
                 }
             }
 
-            //Direccion::where('IDCLIENTE', $cliente->id)->delete();
+            // Direccion::where('IDCLIENTE', $cliente->id)->delete();
 
             $direcciones = $request->input('direcciones');
             // Si no se encontró una dirección principal, asignar la primera dirección como principal
-            if (!$tienePrincipal && count($direcciones) > 0) {
+            if (! $tienePrincipal && count($direcciones) > 0) {
                 $direcciones[0]['TIPO'] = 1;  // Asignar TIPO = 1 a la primera dirección
             }
 
@@ -177,7 +178,7 @@ class ServicioCliente
                             'CODIGOPOSTAL' => $dir['CODIGOPOSTAL'],
                             'IDCLIENTE' => $cliente->id,
                             'PAISESTADO' => $dir['PAISESTADO'],
-                            'LINKWAZE' => $dir['LINKWAZE']
+                            'LINKWAZE' => $dir['LINKWAZE'],
                         ]);
                         $idsExistentes[] = $direccion->id;
                     }
@@ -188,7 +189,7 @@ class ServicioCliente
                         'CODIGOPOSTAL' => $dir['CODIGOPOSTAL'],
                         'IDCLIENTE' => $cliente->id,
                         'PAISESTADO' => $dir['PAISESTADO'],
-                        'LINKWAZE' => $dir['LINKWAZE']
+                        'LINKWAZE' => $dir['LINKWAZE'],
                     ]);
                     $idsExistentes[] = $nueva->id;
                 }
@@ -202,14 +203,15 @@ class ServicioCliente
             return $cliente;
         } catch (Exception $e) {
             var_dump($e->getMessage());
-            die();
+            exit();
 
             return [
                 'state' => 'Error',
-                'mensaje' => 'Hubo un error al actualizar el usuario'
+                'mensaje' => 'Hubo un error al actualizar el usuario',
             ];
         }
     }
+
     public function CalcularDashboardCliente()
     {
         try {
@@ -227,14 +229,16 @@ class ServicioCliente
             $porcentajeClientesMesPasado = $cantidadClientesActuales > 0
                 ? $promedio * 100
                 : 0;
+
             return [
                 'clientes_actuales' => $cantidadClientesActuales,
                 'clientes_mes_pasado' => round($porcentajeClientesMesPasado, 2),
             ];
         } catch (Exception $e) {
-            throw new \Exception('Error al calcular los clientes: ' . $e->getMessage());
+            throw new \Exception('Error al calcular los clientes: '.$e->getMessage());
         }
     }
+
     public function CantidadClientesMeses()
     {
         try {
@@ -251,7 +255,7 @@ class ServicioCliente
 
             return $clientesPorMes;
         } catch (\Exception $e) {
-            throw new \Exception('Error al calcular los clientes por meses: ' . $e->getMessage());
+            throw new \Exception('Error al calcular los clientes por meses: '.$e->getMessage());
         }
     }
 
@@ -273,15 +277,16 @@ class ServicioCliente
                     throw new \Exception('Tipo de dirección no válida');
             }
 
-
             return $paisesEstado;
         } catch (Exception $e) {
             var_dump($e->getMessage());
-            die();
-            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
+            exit();
+            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+
             return null;
         }
     }
+
     private function GetDireccionesPrincipalesClientes()
     {
         try {
@@ -291,7 +296,8 @@ class ServicioCliente
 
             return $paisesEstado->distinct()->get();
         } catch (Exception $e) {
-            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
+            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+
             return null;
         }
     }
@@ -324,14 +330,16 @@ class ServicioCliente
                     }
                 }
             }
+
             // Eliminar duplicados basados en PAISESTADO, CODIGOPOSTAL y DIRECCION
             return $direcciones->unique(function ($item) {
-                return $item['PAISESTADO'] . '|' . $item['CODIGOPOSTAL'] . '|' . $item['DIRECCION'];
+                return $item['PAISESTADO'].'|'.$item['CODIGOPOSTAL'].'|'.$item['DIRECCION'];
             })->values();
         } catch (Exception $e) {
             var_dump($e->getMessage());
 
-            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
+            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+
             return null;
         }
     }
@@ -339,17 +347,19 @@ class ServicioCliente
     public static function ObtenerCliente($tracking): ?User
     {
 
-        try{
+        try {
 
             $idDireccion = $tracking->IDDIRECCION;
             $direccion = Direccion::where('ID', $idDireccion)->first();
-            //$direccionCliente = $tracking->direccion()->first();
+            // $direccionCliente = $tracking->direccion()->first();
             $cliente = $direccion->cliente()->first();
+
             return $cliente->usuario()->first();
 
-        } catch(Exception $e){
+        } catch (Exception $e) {
 
             Log::error('[ServicioCliente->ObtenerCliente] error:'.$e);
+
             return null;
         }
     }

@@ -22,7 +22,7 @@ class RequestCrearPrealerta extends FormRequest
     public function rules(): array
     {
         return [
-            'idTracking' =>  ['required', 'exists:tracking,IDTRACKING'],
+            'idTracking' => ['required', 'exists:tracking,IDTRACKING'],
             'valor' => ['required', 'decimal:0,3'],
             'descripcion' => ['required', 'string', 'max:250'],
             'idProveedor' => ['required', 'exists:proveedor,id'],

@@ -10,14 +10,17 @@ use Illuminate\Queue\SerializesModels;
 class EventoClienteEnlazadoPaquete
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
     public $usuario;
+
     public $tracking;
+
     public $equivocado;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($tracking,$usuario,$equivocado = false)
+    public function __construct($tracking, $usuario, $equivocado = false)
     {
         $this->tracking = $tracking;
         $this->usuario = $usuario;

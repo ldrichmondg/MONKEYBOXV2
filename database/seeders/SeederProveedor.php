@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Proveedor;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SeederProveedor extends Seeder
@@ -15,15 +14,14 @@ class SeederProveedor extends Seeder
     {
         $proveedores = [
             [
-                'NOMBRE' => 'Aeropost'
+                'NOMBRE' => 'Aeropost',
             ],
             [
-                'NOMBRE' => 'MiLocker'
-            ]
+                'NOMBRE' => 'MiLocker',
+            ],
         ];
 
-
-        foreach($proveedores as $proveedor){
+        foreach ($proveedores as $proveedor) {
             Proveedor::create($proveedor);
         }
     }

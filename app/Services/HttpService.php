@@ -10,18 +10,21 @@ class HttpService
     {
         $response = Http::timeout(30)
             ->get($url, $params);
+
         return $response;
     }
 
     public static function postRequest(string $url, array $data = [])
     {
         $response = Http::post($url, $data);
+
         return $response;
     }
 
     public static function postRequestHeaders(string $url, $headers = [], array $data = [])
     {
         $response = Http::withHeaders($headers)->post($url, $data);
+
         return $response;
     }
 }

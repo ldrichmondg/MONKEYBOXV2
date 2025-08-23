@@ -4,15 +4,18 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
 class EmailEliminacionTracking extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $tracking;
+
     public $usuario;
+
     use Queueable, SerializesModels;
 
     /**
@@ -28,23 +31,23 @@ class EmailEliminacionTracking extends Mailable
     /**
      * Create a new message instance.
      *
-     * @param object $tracking Información del tracking eliminado.
-     * @param object $usuario Información del usuario asociado.
+     * @param  object  $tracking  Información del tracking eliminado.
+     * @param  object  $usuario  Información del usuario asociado.
      */
     public function __construct($tracking, $usuario)
     {
         $this->tracking = $tracking;
         $this->usuario = $usuario;
     }
+
     public function content(): Content
     {
         return new Content(
             markdown: 'mail.eliminacion-tracking',
-            with:[
+            with: [
                 'tracking' => $this->tracking,
                 'usuario' => $this->usuario,
             ],
         );
     }
-    
 }

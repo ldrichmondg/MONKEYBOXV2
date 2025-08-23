@@ -11,7 +11,9 @@ class EnviarFactura extends Mailable
     use Queueable, SerializesModels;
 
     public $usuario;
+
     public $tracking;
+
     public $equivocado;
 
     /**
@@ -29,12 +31,13 @@ class EnviarFactura extends Mailable
      */
     public function build()
     {
-        if($this->equivocado){
+        if ($this->equivocado) {
             return $this->markdown('mail.email-factura-equivocado')
-                                ->subject('Factura enviada por error');
+                ->subject('Factura enviada por error');
         }
+
         return $this->markdown('mail.email-factura')
-                    ->subject('Factura enviada correctamente')
-                    ->attach(storage_path('app/public/facturas/' . $this->tracking->IDTRACKING.".pdf"));
+            ->subject('Factura enviada correctamente')
+            ->attach(storage_path('app/public/facturas/'.$this->tracking->IDTRACKING.'.pdf'));
     }
 }

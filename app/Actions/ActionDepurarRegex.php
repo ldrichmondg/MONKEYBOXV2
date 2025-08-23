@@ -4,7 +4,6 @@ namespace App\Actions;
 
 class ActionDepurarRegex
 {
-
     public static function execute(string $regex): string
     {
         // 1. Verificar si el primer y ultimo char tienen / o /i
@@ -19,18 +18,16 @@ class ActionDepurarRegex
 
         // - Validaciones del primero
         if ($primerChar != '/') {
-            $regexDepurado = '/' . $regexDepurado;
+            $regexDepurado = '/'.$regexDepurado;
         }
 
         // - Validaciones del ultimo
         if ($ultimoChar == '/') {
-            $regexDepurado = $regexDepurado . 'i';
-        }
-        else if($ultimoChar != 'i') {
-            $regexDepurado = $regexDepurado . '/i';
+            $regexDepurado = $regexDepurado.'i';
+        } elseif ($ultimoChar != 'i') {
+            $regexDepurado = $regexDepurado.'/i';
         }
 
         return $regexDepurado;
     }
-
 }

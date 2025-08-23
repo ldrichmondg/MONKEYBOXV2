@@ -15,7 +15,9 @@ class DireccionesTracking extends Model
      * @var string
      */
     protected $table = 'direccionesTracking';
+
     public $timestamps = false;
+
     /**
      * The primary key for the model.
      *
@@ -29,8 +31,9 @@ class DireccionesTracking extends Model
      * @var array
      */
     protected $fillable = [
-        'DIRECCION'
+        'DIRECCION',
     ];
+
     /**
      * The attributes that should be mutated to dates.
      *
@@ -41,6 +44,4 @@ class DireccionesTracking extends Model
         'updated_at',
         'deleted_at',
     ];
-
-   
 }

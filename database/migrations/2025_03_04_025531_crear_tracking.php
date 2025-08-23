@@ -19,9 +19,9 @@ return new class extends Migration
             $table->string('DESDE', 50);
             $table->string('HASTA', 50);
             $table->string('DESTINO', 50);
-            $table->string('COURIER',50);
+            $table->string('COURIER', 50);
             $table->smallInteger('DIASTRANSITO');
-            $table->decimal('PESO', 8,3);
+            $table->decimal('PESO', 8, 3);
             $table->unsignedBigInteger('IDDIRECCION');
             $table->unsignedBigInteger('IDUSUARIO');
             $table->foreign('IDDIRECCION')->references('id')->on('direccion');
@@ -40,6 +40,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('tracking');
     }
-
-
 };

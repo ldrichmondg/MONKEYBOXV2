@@ -2,18 +2,19 @@
 
 namespace App\Mail;
 
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Content;
-use Carbon\Carbon;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
 class EmailCumpleanios extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $usuario;
+
     use Queueable, SerializesModels;
 
     /**
@@ -29,26 +30,26 @@ class EmailCumpleanios extends Mailable
     /**
      * Create a new message instance.
      *
-     * @param object $tracking Información del tracking eliminado.
-     * @param object $usuario Información del usuario asociado.
+     * @param  object  $tracking  Información del tracking eliminado.
+     * @param  object  $usuario  Información del usuario asociado.
      */
     public function __construct($usuario)
     {
         $this->usuario = $usuario;
     }
+
     public function content(): Content
     {
         $fechaVencimiento = Carbon::now()->addDays(7)->format('d/m/Y'); // o 'Y-m-d' si preferís
-        $codigoDescuento = 'FELIZ' . Carbon::now()->format('mY'); // genera FELIZ042025
+        $codigoDescuento = 'FELIZ'.Carbon::now()->format('mY'); // genera FELIZ042025
 
         return new Content(
             markdown: 'mail.cumpleanios',
-            with:[
+            with: [
                 'usuario' => $this->usuario,
                 'fechaVencimiento' => $fechaVencimiento,
                 'codigoDescuento' => $codigoDescuento,
             ],
         );
     }
-    
 }

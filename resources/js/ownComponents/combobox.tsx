@@ -26,7 +26,7 @@ import { InputError } from '@/types/input';
 export function Combobox( {items = [], placeholder, classNames = '', onChange, isActive, error} : {items: ComboBoxItem[], placeholder: string, classNames?: string, onChange?: (idSeleccionado : number) => void, isActive: boolean, error?: InputError }) {
     const [open, setOpen] = React.useState(false)
     const [value, setValue] = React.useState('')
-
+    /*asi funcionaba !!error?.message */
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -34,7 +34,7 @@ export function Combobox( {items = [], placeholder, classNames = '', onChange, i
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className={"min-w-[200px] justify-between" + classNames + (!!error?.message ? ' border-red-400' : '') }
+                    className={"min-w-[200px] justify-between" + classNames + (error?.message ? ' border-red-400' : '') }
                     disabled={!isActive}
                 >
                     {value

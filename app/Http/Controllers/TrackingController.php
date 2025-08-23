@@ -11,28 +11,31 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-# Nomenclatura a usar:
-# SubmoduloAccion (recursoID)
+// Nomenclatura a usar:
+// SubmoduloAccion (recursoID)
 
 class TrackingController
 {
-
-    public function ConsultaVista(): Response {
+    public function ConsultaVista(): Response
+    {
 
         return Inertia::render('tracking/consultaTracking', []);
     }
 
-    public function RegistroMasivoVista(): Response {
+    public function RegistroMasivoVista(): Response
+    {
 
         $clientes = ServicioCliente::ObtenerClientesSimples();
+
         return Inertia::render('tracking/registroMasivo',
-            ['clientes' =>  $clientes]
+            ['clientes' => $clientes]
         );
     }
 
-    public function RegistroJson(RequestTrackingRegistro $request): JsonResponse {
+    public function RegistroJson(RequestTrackingRegistro $request): JsonResponse
+    {
 
-        try{
+        try {
 
             $tracking = ServicioTracking::ObtenerORegistrarTracking($request);
 
@@ -40,7 +43,7 @@ class TrackingController
 
         } catch (\Exception $e) {
 
-            Log::error('[TrackingController->Registro] error:' . $e);
+            Log::error('[TrackingController->Registro] error:'.$e);
 
             return response()->json([
                 'status' => 'error',
@@ -49,8 +52,7 @@ class TrackingController
         }
     }
 
-    public function Detalle(): Response{ //tengo que poner un request para verificar que el id del tracking existe
-
-        return Inertia::render('tracking/detalleTracking', []);
+    public function Detalle(): Response // tengo que poner un request para verificar que el id del tracking existe
+    {return Inertia::render('tracking/detalleTracking', []);
     }
 }

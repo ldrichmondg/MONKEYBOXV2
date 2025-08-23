@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Cliente;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SeederCliente extends Seeder
@@ -16,18 +15,18 @@ class SeederCliente extends Seeder
         $cliente = [
             'CASILLERO' => '2454',
             'IDUSUARIO' => 4,
-            'FECHANACIMIENTO' => '2005-03-01'
-                ];
+            'FECHANACIMIENTO' => '2005-03-01',
+        ];
 
         Cliente::create($cliente);
 
         $cliente2 = [
             'CASILLERO' => '222',
             'IDUSUARIO' => 5,
-            'FECHANACIMIENTO' => '2005-04-18'
+            'FECHANACIMIENTO' => '2005-04-18',
         ];
 
         Cliente::create($cliente2);
-        
+
     }
 }

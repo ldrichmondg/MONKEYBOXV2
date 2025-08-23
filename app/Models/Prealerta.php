@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Prealerta extends Model
 {
-
     protected $table = 'prealerta';
 
     protected $fillable = [
@@ -16,7 +15,7 @@ class Prealerta extends Model
         'NOMBRETIENDA',
         'IDCOURIER',
         'IDPREALERTA',
-        'IDTRACKINGPROVEEDOR'
+        'IDTRACKINGPROVEEDOR',
     ];
 
     public function trackingProveedor(): belongsTo

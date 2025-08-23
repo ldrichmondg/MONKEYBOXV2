@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('CODIGOPOSTAL');
             $table->foreign('IDCLIENTE')->references('id')->on('cliente');
             $table->string('PAISESTADO', 75);
-            $table->string('LINKWAZE')->default("")->nullable();
+            $table->string('LINKWAZE')->default('')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

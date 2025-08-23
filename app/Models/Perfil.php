@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Perfil extends Model
 {
     use HasFactory;
+
     // Desactiva los timestamps
     public $timestamps = false;
+
     protected $table = 'perfil';
 
     protected $fillable = ['DESCRIPCION'];
@@ -19,5 +21,4 @@ class Perfil extends Model
     {
         return $this->hasMany(User::class, 'IDPERFIL');
     }
-
 }

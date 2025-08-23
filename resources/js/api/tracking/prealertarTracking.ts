@@ -45,7 +45,6 @@ export async function PrealertarTracking(tracking : TrackingConPrealertaBaseProv
 
         const data: TrackingConPrealertaBaseProveedor  = await response.json();
         data.errores = []; //como no hay errores, ponerlo vacio
-        console.log('Se llama: '+ data);
 
         return data;
 

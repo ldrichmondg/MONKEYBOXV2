@@ -5,29 +5,32 @@ namespace App\Services;
 use App\Events\EventoClienteEnlazadoPaquete;
 use App\Events\EventoCorreoEliminarTracking;
 use App\Events\EventoFacturaGenerada;
-use App\Events\FacturaGenerada;
-use Exception;
-use App\Models\Tracking;
-use App\Models\Direccion;
-use App\Models\Cliente;
-use App\Models\TrackingHistorial;
-use App\Models\Enum\TipoHistorialTracking;
-use Illuminate\Support\Facades\Auth;
-use DateTime;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\EmailAvisoCostaRica;
 use App\Mail\EmailAvisoCliente;
+use App\Mail\EmailAvisoCostaRica;
+use App\Models\Cliente;
+use App\Models\Direccion;
+use App\Models\Enum\TipoHistorialTracking;
+use App\Models\Tracking;
+use App\Models\TrackingHistorial;
+use Carbon\Carbon;
+use DateTime;
+use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class ServicioTrackingViejo
 {
     protected $servicioHttp;
+
     protected $trackingModel;
+
     protected $direccionModel;
+
     protected $clienteModel;
+
     protected $servicioDireccionesTracking;
 
     public function __construct(HttpService $servicioHttp, ServicioDireccionesTracking $servicioDireccionesTracking, Tracking $trackingModel, Direccion $direccionModel, Cliente $clienteModel)
@@ -46,14 +49,15 @@ class ServicioTrackingViejo
                 return $atributo['val'];
             }
         }
-        return NULL;
+
+        return null;
     }
 
     private function SeparaLugar($lugar)
     {
         $postalCode = 0;
         $lugarSinCodigoPostal = $lugar;
-        if (!empty($lugar)) {
+        if (! empty($lugar)) {
             $ultimaComma = strrpos($lugar, ',');
             if ($ultimaComma !== false) {
                 $posiblePostalCode = trim(substr($lugar, $ultimaComma + 1));
@@ -63,6 +67,7 @@ class ServicioTrackingViejo
                 }
             }
         }
+
         return [$lugarSinCodigoPostal, $postalCode];
     }
 
@@ -76,12 +81,12 @@ class ServicioTrackingViejo
                 $respuestaObjeto = $respuesta;
             }
 
-            if (isset($respuestaObjeto['estado']) && $respuestaObjeto['estado'] == "proceso") {
+            if (isset($respuestaObjeto['estado']) && $respuestaObjeto['estado'] == 'proceso') {
                 return $respuestaObjeto;
             }
 
-            if (!isset($respuestaObjeto)) {
-                throw new Exception("Respuesta inválida o sin datos");
+            if (! isset($respuestaObjeto)) {
+                throw new Exception('Respuesta inválida o sin datos');
             }
 
             $datos = $respuestaObjeto['datos'] ?? $respuestaObjeto;
@@ -93,39 +98,38 @@ class ServicioTrackingViejo
             $attributes = $shipment['attributes'];
             $arrayCarries = $shipment['carriers'];
 
-            $tracking = new Tracking();
+            $tracking = new Tracking;
             $tracking->IDAPI = 0;
             $tracking->IDTRACKING = $shipment['trackingId'];
-            $tracking->DESCRIPCION = "";
-            $tracking->DESDE = $this->RetornaValorAtributo($attributes, "from") ?? "";
-            $tracking->HASTA = $this->RetornaValorAtributo($attributes, "to") ?? "";
-            $tracking->DESTINO = $this->RetornaValorAtributo($attributes, "destination") ?? "";
-            $tracking->COURIER = implode(", ", $arrayCarries);
-            $tracking->DIASTRANSITO = $this->RetornaValorAtributo($attributes, "days_transit") ?? 0;
+            $tracking->DESCRIPCION = '';
+            $tracking->DESDE = $this->RetornaValorAtributo($attributes, 'from') ?? '';
+            $tracking->HASTA = $this->RetornaValorAtributo($attributes, 'to') ?? '';
+            $tracking->DESTINO = $this->RetornaValorAtributo($attributes, 'destination') ?? '';
+            $tracking->COURIER = implode(', ', $arrayCarries);
+            $tracking->DIASTRANSITO = $this->RetornaValorAtributo($attributes, 'days_transit') ?? 0;
             $tracking->PESO = 0.000;
             $tracking->IDDIRECCION = 1;
             $tracking->IDUSUARIO = Auth::user()->id ?? 1;
 
             $historiales = [];
             $cont = -1;
-            if (!empty($shipment['states'])) {
+            if (! empty($shipment['states'])) {
                 foreach ($shipment['states'] as $state) {
                     $courierCodigoJson = $state['carrier'];
 
-                    $lugar = $this->SeparaLugar(!empty($state['location']) ? $state['location'] : "");
+                    $lugar = $this->SeparaLugar(! empty($state['location']) ? $state['location'] : '');
 
-                    $evento = new TrackingHistorial();
+                    $evento = new TrackingHistorial;
                     $evento->id = $cont;
                     $evento->DESCRIPCION = $state['status'];
                     $evento->DESCRIPCIONMODIFICADA = '';
                     $evento->PAISESTADO = $lugar[0];
                     $evento->CODIGOPOSTAL = $lugar[1];
-                    $evento->OCULTADO = !empty($state['require_fields']);
+                    $evento->OCULTADO = ! empty($state['require_fields']);
                     $evento->TIPO = TipoHistorialTracking::API->value;
                     $evento->IDTRACKING = $shipment['trackingId'];
                     $evento->FECHA = (new \DateTime($state['date']))->format('Y-m-d H:i:s');
                     $evento->IDCOURIER = $tracking->courrierNombreAId($arrayCarries[$courierCodigoJson]);
-
 
                     $historiales[] = $evento;
                     $cont = $cont - 1;
@@ -141,7 +145,7 @@ class ServicioTrackingViejo
                 $this->servicioDireccionesTracking->CrearDireccionTracking($tracking->DESTINO);
 
                 foreach ($historiales as $evento) {
-                    $historial = new TrackingHistorial();
+                    $historial = new TrackingHistorial;
                     $historial->DESCRIPCION = $evento->DESCRIPCION;
                     $historial->DESCRIPCIONMODIFICADA = $evento->DESCRIPCIONMODIFICADA;
                     $historial->PAISESTADO = $evento->PAISESTADO;
@@ -155,7 +159,7 @@ class ServicioTrackingViejo
                 }
 
                 $usuario = $this->ObtenerCliente($tracking);
-                if (!empty($usuario)) {
+                if (! empty($usuario)) {
                     EventoClienteEnlazadoPaquete::dispatch($tracking, $usuario);
                 }
 
@@ -163,27 +167,28 @@ class ServicioTrackingViejo
             }
 
             $tracking->historialesT = $historiales;
-            $tracking->COURIER = implode(", ", $arrayCarries);
+            $tracking->COURIER = implode(', ', $arrayCarries);
 
             return [
                 'tracking' => $tracking,
-                'historial' => $historiales
+                'historial' => $historiales,
             ];
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
 
-
     private function ObtenerCliente($tracking)
     {
 
         $idDireccion = $tracking->IDDIRECCION;
         $direccion = Direccion::where('ID', $idDireccion)->first();
-        //$direccionCliente = $tracking->direccion()->first();
+        // $direccionCliente = $tracking->direccion()->first();
         $cliente = $direccion->cliente()->first();
+
         return $cliente->usuario()->first();
     }
+
     private function RastrearEnvio($numeroSeguimiento)
     {
         try {
@@ -194,37 +199,38 @@ class ServicioTrackingViejo
             $envios = [
                 [
                     'trackingId' => $numeroSeguimiento,
-                    'language'   => 'es',
-                    'country'    => 'Costa Rica'
+                    'language' => 'es',
+                    'country' => 'Costa Rica',
                 ],
             ];
 
             // Iniciar la solicitud de seguimiento
             $respuesta = $this->servicioHttp->postRequest($urlSeguimiento, [
-                'apiKey'   => $apiKey,
+                'apiKey' => $apiKey,
                 'shipments' => $envios,
             ]);
 
             if ($respuesta->successful()) {
                 $datosRespuesta = $respuesta->json();
 
-                $uuid = $datosRespuesta['uuid'] ?? "";
+                $uuid = $datosRespuesta['uuid'] ?? '';
 
-                if (empty($uuid) && !empty($datosRespuesta['shipments'])) {
+                if (empty($uuid) && ! empty($datosRespuesta['shipments'])) {
                     return $datosRespuesta;
                 }
 
                 // Verificar el estado del seguimiento con UUID
-                //$estadoSeguimiento = $this->VerificarEstadoSeguimiento($uuid);
+                // $estadoSeguimiento = $this->VerificarEstadoSeguimiento($uuid);
                 $estadoSeguimiento = ['estado' => 'proceso', 'datos' => $uuid];
+
                 return $estadoSeguimiento;
             } else {
 
-                throw new Exception("Error en la solicitud POST: " . $respuesta->status());
+                throw new Exception('Error en la solicitud POST: '.$respuesta->status());
             }
         } catch (Exception $e) {
 
-            throw new Exception("Numero de tracking no encontrado" . $e->getMessage());
+            throw new Exception('Numero de tracking no encontrado'.$e->getMessage());
         }
     }
 
@@ -236,7 +242,7 @@ class ServicioTrackingViejo
 
             $respuesta = $this->servicioHttp->getRequest($urlSeguimiento, [
                 'apiKey' => $apiKey,
-                'uuid'   => $uuid,
+                'uuid' => $uuid,
             ]);
 
             if ($respuesta->successful()) {
@@ -249,30 +255,33 @@ class ServicioTrackingViejo
                     return ['estado' => 'proceso', 'datos' => $uuid];
                 }
             } else {
-                throw new Exception("Error en la consulta GET: " . $respuesta->body());
+                throw new Exception('Error en la consulta GET: '.$respuesta->body());
             }
         } catch (Exception $e) {
-            throw new Exception("Error en VerificarEstadoSeguimiento: " . $e->getMessage());
+            throw new Exception('Error en VerificarEstadoSeguimiento: '.$e->getMessage());
         }
     }
+
     public function detalleTracking($idTracking)
     {
-        //1.idTracking que ponga en el usuario ya exista en la bd
-        //Si no existe en la BD llamar a la api
-        //Si la api no retorna no exste en ningun lado mandar msj
+        // 1.idTracking que ponga en el usuario ya exista en la bd
+        // Si no existe en la BD llamar a la api
+        // Si la api no retorna no exste en ningun lado mandar msj
 
         try {
 
-            //Verificar si esta en la BD
+            // Verificar si esta en la BD
 
             $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
 
             if ($tracking != null) {
                 return $tracking;
             }
+
             return null;
         } catch (Exception $e) {
-            throw new Exception("Error en Detalles: " . $e->getMessage());
+            throw new Exception('Error en Detalles: '.$e->getMessage());
+
             return null;
         }
     }
@@ -284,11 +293,14 @@ class ServicioTrackingViejo
             $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
             if ($tracking != null) {
                 $historial = TrackingHistorial::where('IDTRACKING', $tracking->id)->get();
+
                 return $historial;
             }
+
             return null;
         } catch (Exception $e) {
-            throw new Exception("Error en Historiales: " . $e->getMessage());
+            throw new Exception('Error en Historiales: '.$e->getMessage());
+
             return null;
         }
     }
@@ -297,13 +309,12 @@ class ServicioTrackingViejo
     {
         try {
 
-
             $tracking = Tracking::where('IDTRACKING', $request->idTracking)->first();
-            if (!$tracking) {
+            if (! $tracking) {
                 return false;
             }
 
-            if ($request->RUTAFACTURA != "-1") {
+            if ($request->RUTAFACTURA != '-1') {
                 $tracking->RUTAFACTURA = $request->RUTAFACTURA;
             }
 
@@ -318,10 +329,12 @@ class ServicioTrackingViejo
             return true;
         } catch (Exception $e) {
 
-            throw new Exception('Error al actualizar el tracking: ' . $e->getMessage());
+            throw new Exception('Error al actualizar el tracking: '.$e->getMessage());
+
             return false;
         }
     }
+
     public function EnviaCorreos($tracking, $trackingViejo)
     {
         try {
@@ -330,22 +343,22 @@ class ServicioTrackingViejo
                 return;
             }
 
-            $usuario = $this->ObtenerCliente($tracking); //#
+            $usuario = $this->ObtenerCliente($tracking); // #
             $usuarioViejo = $this->ObtenerCliente($trackingViejo);
 
             if ($usuario == null || empty($usuario->email)) {
                 return;
             }
 
-            if ($tracking->ENTREGADOCOSTARICA && !$trackingViejo->ENTREGADOCOSTARICA) {
+            if ($tracking->ENTREGADOCOSTARICA && ! $trackingViejo->ENTREGADOCOSTARICA) {
                 Mail::to($usuario->email)->send(new EmailAvisoCostaRica($usuario, $tracking));
-            } elseif (!$tracking->ENTREGADOCOSTARICA && $trackingViejo->ENTREGADOCOSTARICA) {
+            } elseif (! $tracking->ENTREGADOCOSTARICA && $trackingViejo->ENTREGADOCOSTARICA) {
                 Mail::to($usuario->email)->send(new EmailAvisoCostaRica($usuario, $tracking, true));
             }
 
-            if ($tracking->ENTREGADOCLIENTE && !$trackingViejo->ENTREGADOCLIENTE) {
+            if ($tracking->ENTREGADOCLIENTE && ! $trackingViejo->ENTREGADOCLIENTE) {
                 Mail::to($usuario->email)->send(new EmailAvisoCliente($usuario, $tracking));
-            } elseif (!$tracking->ENTREGADOCLIENTE && $trackingViejo->ENTREGADOCLIENTE) {
+            } elseif (! $tracking->ENTREGADOCLIENTE && $trackingViejo->ENTREGADOCLIENTE) {
                 Mail::to($usuario->email)->send(new EmailAvisoCliente($usuario, $tracking, true));
             }
 
@@ -355,9 +368,10 @@ class ServicioTrackingViejo
             }
         } catch (Exception $e) {
             // Registrar el error (opcional)
-            die($e->getMessage());
+            exit($e->getMessage());
         }
     }
+
     public function EnviaCorreosEnlazado($tracking)
     {
         try {
@@ -381,15 +395,16 @@ class ServicioTrackingViejo
             }
         } catch (Exception $e) {
             // Registrar el error (opcional)
-            die($e->getMessage());
+            exit($e->getMessage());
         }
     }
+
     public function ActualizarHistorial($request): bool
     {
         try {
             $historial = TrackingHistorial::where('ID', $request->idHistorial)->first();
 
-            if (!$historial) {
+            if (! $historial) {
                 return false;
             }
 
@@ -405,7 +420,8 @@ class ServicioTrackingViejo
             return true;
         } catch (Exception $e) {
 
-            throw new Exception('Error al actualizar el historial: ' . $e->getMessage());
+            throw new Exception('Error al actualizar el historial: '.$e->getMessage());
+
             return false; // Retornar false si ocurre un error
         }
     }
@@ -415,7 +431,7 @@ class ServicioTrackingViejo
         try {
             $historial = TrackingHistorial::where('ID', $request->idHistorial)->first();
 
-            if (!$historial) {
+            if (! $historial) {
                 return false;
             }
             if (isset($request->ocultado)) {
@@ -427,7 +443,8 @@ class ServicioTrackingViejo
             return true;
         } catch (Exception $e) {
             // Registrar el error
-            throw new Exception('Error al actualizar el historial: ' . $e->getMessage());
+            throw new Exception('Error al actualizar el historial: '.$e->getMessage());
+
             return false; // Retornar false si ocurre un error
         }
     }
@@ -439,23 +456,23 @@ class ServicioTrackingViejo
             $tracking = Tracking::where('IDTRACKING', $request->idTracking)->first();
 
             // Si no existe el tracking, retornamos un error
-            if (!$tracking) {
+            if (! $tracking) {
                 return response()->json([
                     'error' => 'Tracking no encontrado.',
                 ], 404);
             }
 
             // Crear un nuevo historial de Tracking
-            $historialTracking = new TrackingHistorial();
+            $historialTracking = new TrackingHistorial;
             $historialTracking->DESCRIPCION = $request->descripcion;
             $historialTracking->CODIGOPOSTAL = 0;
-            $historialTracking->PAISESTADO =  $request->descripcion == 'Ya llegó tu paquete ¡Estamos para servirte!' ? $tracking->direccion->PAISESTADO  : 'Costa Rica';
-            $historialTracking->DESCRIPCIONMODIFICADA = $request->descripcionModificada ?? "";
+            $historialTracking->PAISESTADO = $request->descripcion == 'Ya llegó tu paquete ¡Estamos para servirte!' ? $tracking->direccion->PAISESTADO : 'Costa Rica';
+            $historialTracking->DESCRIPCIONMODIFICADA = $request->descripcionModificada ?? '';
             $historialTracking->OCULTADO = 0;
             $historialTracking->TIPO = 2;
             $fecha = isset($request->date)
                 ? new DateTime($request->date)
-                : new DateTime(); // ahora mismo
+                : new DateTime; // ahora mismo
 
             $historialTracking->FECHA = $fecha->format('Y-m-d H:i:s');
 
@@ -473,8 +490,6 @@ class ServicioTrackingViejo
 
             $historialTracking->save();  // Guardamos el historial
 
-
-
             return response()->json([
                 'message' => 'Historial creado exitosamente para el tracking.',
                 'tracking' => $tracking,
@@ -482,7 +497,7 @@ class ServicioTrackingViejo
             ], 201);
         } catch (Exception $e) {
             return response()->json([
-                'error' => 'Hubo un error al crear el historial del tracking: ' . $e->getMessage(),
+                'error' => 'Hubo un error al crear el historial del tracking: '.$e->getMessage(),
             ], 400);
         }
     }
@@ -490,8 +505,10 @@ class ServicioTrackingViejo
     public function actualizarEstadoTracking($idTracking, $tipo, $idDireccionNueva = null)
     {
 
-        $tracking = Tracking::where('IDTRACKING', (string)$idTracking)->first();
-        if (!$tracking) return false;
+        $tracking = Tracking::where('IDTRACKING', (string) $idTracking)->first();
+        if (! $tracking) {
+            return false;
+        }
 
         $trackingViejo = clone $tracking;
 
@@ -520,7 +537,9 @@ class ServicioTrackingViejo
             $tracking->FECHAENTREGA = null;
         }
 
-        if ($idDireccionNueva != null)  $tracking->IDDIRECCION = $idDireccionNueva;
+        if ($idDireccionNueva != null) {
+            $tracking->IDDIRECCION = $idDireccionNueva;
+        }
 
         // Solo enviar correo si se está activando
         if ($tipo == 1 || $tipo == 2) {
@@ -531,14 +550,13 @@ class ServicioTrackingViejo
         return $tracking->save();
     }
 
-
     public function EliminarHistorialPorTipo($data)
     {
         $tipo = $data->tipo; // 'costarica' o 'cliente'
         $columna = $tipo === 'costarica' ? 'COSTARICA' : 'CLIENTE';
 
         $tracking = Tracking::where('IDTRACKING', $data->idTracking)->first();
-        if (!$tracking) {
+        if (! $tracking) {
             return false;
         }
 
@@ -552,6 +570,7 @@ class ServicioTrackingViejo
 
         // Ahora actualizar el estado del tracking
         $tipoUpdate = $tipo === 'costarica' ? 'desactivar_costarica' : 'desactivar_cliente';
+
         return $this->actualizarEstadoTracking($data->idTracking, $tipoUpdate);
     }
 
@@ -559,7 +578,7 @@ class ServicioTrackingViejo
     {
         $historial = TrackingHistorial::find($data->idHistorial);
 
-        if (!$historial) {
+        if (! $historial) {
             return false;
         }
 
@@ -582,12 +601,15 @@ class ServicioTrackingViejo
                 $historial->restore(); // Restaurar cada historial
             });
             $tracking->restore(); // Restaurar el tracking
+
             return true; // Retornar true si la restauración fue exitosa
         } catch (Exception $e) {
-            throw new Exception('Error al restaurar el tracking: ' . $e->getMessage());
+            throw new Exception('Error al restaurar el tracking: '.$e->getMessage());
+
             return false; // Retornar false si ocurre un error
         }
     }
+
     public function EliminarTracking($idTracking)
     {
 
@@ -602,7 +624,7 @@ class ServicioTrackingViejo
             $cliente = Cliente::where('ID', $direccion->IDCLIENTE)->first();
             $usuario = $cliente->usuario()->first();
 
-            if (!$tracking || !$historialTracking || !$cliente) {
+            if (! $tracking || ! $historialTracking || ! $cliente) {
                 return false;
             }
 
@@ -616,14 +638,16 @@ class ServicioTrackingViejo
             if ($usuario && $usuario->email) {
                 EventoCorreoEliminarTracking::dispatch($tracking, $usuario);
             }
+
             return true;
         } catch (Exception $e) {
 
             return response()->json([
-                'error' => 'Hubo un error al eliminar el tracking: ' . $e->getMessage(),
+                'error' => 'Hubo un error al eliminar el tracking: '.$e->getMessage(),
             ], 400);
         }
     }
+
     public static function Filtro($request): ?LengthAwarePaginator
     {
         try {
@@ -652,7 +676,7 @@ class ServicioTrackingViejo
                 ->join('users as u', 'c.IDUSUARIO', '=', 'u.id')
                 ->orderBy('u.NOMBRE');
 
-            if (!empty($query)) {
+            if (! empty($query)) {
                 $trackings->where(function ($q) use ($query) {
                     $q->where('DESCRIPCION', 'like', "%{$query}%")
                         ->orWhere('IDTRACKING', 'like', "%{$query}%")
@@ -671,7 +695,6 @@ class ServicioTrackingViejo
                 $trackings->whereIn('IDDIRECCION', $idsDirecciones);
             }
 
-
             return $trackings->paginate(8);
         } catch (\Throwable $e) {
             Log::error('Error en ServicioUsuario::Filtro', [
@@ -679,9 +702,11 @@ class ServicioTrackingViejo
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
             ]);
+
             return null;
         }
     }
+
     public function CalcularDashboardPedidos($entradosCliente)
     {
         try {
@@ -723,12 +748,9 @@ class ServicioTrackingViejo
             ];
         } catch (Exception $e) {
             // Manejo de errores
-            throw new \Exception('Error al calcular los pedidos en tránsito: ' . $e->getMessage());
+            throw new \Exception('Error al calcular los pedidos en tránsito: '.$e->getMessage());
         }
     }
-
-
-
 
     public function PromedioPedidosXCliente()
     {
@@ -765,15 +787,16 @@ class ServicioTrackingViejo
                 'porcentajeDiferencia' => round($diferenciaPromedio, 2),
             ];
         } catch (\Exception $e) {
-            throw new \Exception('Error al calcular los pedidos por cliente: ' . $e->getMessage());
+            throw new \Exception('Error al calcular los pedidos por cliente: '.$e->getMessage());
         }
     }
+
     private function findExistingFile($pattern)
     {
         $directory = storage_path('app/public/facturas');  // Ruta donde se almacenan los archivos
 
         // Obtener todos los archivos en la carpeta 'facturas'
-        $files = glob($directory . '/' . $pattern . '*');  // Buscar archivos que comiencen con el patrón
+        $files = glob($directory.'/'.$pattern.'*');  // Buscar archivos que comiencen con el patrón
 
         // Si se encontró algún archivo
         if (count($files) > 0) {
@@ -783,12 +806,12 @@ class ServicioTrackingViejo
         // Si no se encontró ningún archivo
         return null;
     }
+
     private function ProcesoFactura($file, $idTracking, $eliminarFactura)
     {
 
-
         $fileUrl = null;
-        $tracking = Tracking::where("IDTRACKING", $idTracking)->first();
+        $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
 
         if ($file) {
 
@@ -801,7 +824,7 @@ class ServicioTrackingViejo
             // Si encontramos el archivo anterior, lo eliminamos
             if ($existingFilePath) {
                 // Eliminar el archivo anterior
-                $filePath = storage_path('app/public/facturas/' . $existingFilePath);
+                $filePath = storage_path('app/public/facturas/'.$existingFilePath);
 
                 if (file_exists($filePath)) {
                     $fileUrl = null;
@@ -813,13 +836,13 @@ class ServicioTrackingViejo
             $extension = $file->getClientOriginalExtension();
 
             // Crear un nombre de archivo único concatenando el idTracking y el timestamp
-            $fileName = $idTracking . '.' . $extension;
+            $fileName = $idTracking.'.'.$extension;
 
             // Guardar el archivo en el almacenamiento público
             $filePath = $file->storeAs('facturas', $fileName, 'public');
 
             // Obtener la URL pública del archivo
-            $fileUrl = 'app/public/' . $filePath;
+            $fileUrl = 'app/public/'.$filePath;
             EventoFacturaGenerada::dispatch($tracking, false);
         } else {
             // Si no se sube un nuevo archivo y se marca la opción de eliminar, procedemos a eliminar el archivo
@@ -831,9 +854,8 @@ class ServicioTrackingViejo
 
                 if ($existingFilePath) {
                     // Eliminar el archivo
-                    $filePath = storage_path('app/public/facturas/' . $existingFilePath);
+                    $filePath = storage_path('app/public/facturas/'.$existingFilePath);
                     EventoFacturaGenerada::dispatch($tracking, true);
-
 
                     unlink($filePath); // Elimina el archivo
                     $fileUrl = null;
@@ -843,6 +865,7 @@ class ServicioTrackingViejo
 
         return $fileUrl;
     }
+
     public function GuardarTracking(array $data): bool
     {
         try {
@@ -853,7 +876,7 @@ class ServicioTrackingViejo
 
             $rutaFactura = $this->ProcesoFactura($data['factura'], $encabezado['IDTRACKING'], $data['eliminarFactura']);
 
-            $tracking = new Tracking();
+            $tracking = new Tracking;
             $tracking->IDAPI = 0;
             $tracking->IDTRACKING = $encabezado['IDTRACKING'] ?? null;
             $tracking->DESCRIPCION = $encabezado['DESCRIPCION'] ?? '';
@@ -867,11 +890,11 @@ class ServicioTrackingViejo
             $tracking->COURIER = $encabezado['COURIER'] ?? '';
             $tracking->DIASTRANSITO = $encabezado['DIASTRANSITO'] ?? 0;
             $tracking->IDUSUARIO = Auth::user()->id ?? 1;
-            $tracking->RUTAFACTURA = $rutaFactura ?? NULL;
+            $tracking->RUTAFACTURA = $rutaFactura ?? null;
             $tracking->save();
 
             foreach ($detalle as $evento) {
-                $historial = new TrackingHistorial();
+                $historial = new TrackingHistorial;
                 $historial->IDTRACKING = $tracking->id;
                 $historial->DESCRIPCION = $evento['DESCRIPCION'] ?? null;
                 $historial->DESCRIPCIONMODIFICADA = $evento['DESCRIPCIONMODIFICADA'] ?? '';
@@ -883,7 +906,7 @@ class ServicioTrackingViejo
                 $historial->CODIGOPOSTAL = $evento['CODIGOPOSTAL'] ?? 0;
                 $historial->save();
             }
-            //Para los filtros
+            // Para los filtros
             $this->servicioDireccionesTracking->CrearDireccionTracking($tracking->DESDE);
             $this->servicioDireccionesTracking->CrearDireccionTracking($tracking->HASTA);
             $this->servicioDireccionesTracking->CrearDireccionTracking($tracking->DESTINO);
@@ -891,7 +914,7 @@ class ServicioTrackingViejo
             DB::commit();
             $usuario = $this->ObtenerCliente($tracking);
 
-            if (!empty($usuario)) {
+            if (! empty($usuario)) {
 
                 EventoClienteEnlazadoPaquete::dispatch($tracking, $usuario);
                 $this->EnviaCorreosEnlazado($tracking);
@@ -901,8 +924,8 @@ class ServicioTrackingViejo
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al guardar tracking: ' . $e->getMessage());
-            throw new \Exception('Error al guardar el tracking: ' . $e->getMessage());
+            Log::error('Error al guardar tracking: '.$e->getMessage());
+            throw new \Exception('Error al guardar el tracking: '.$e->getMessage());
         }
     }
 }

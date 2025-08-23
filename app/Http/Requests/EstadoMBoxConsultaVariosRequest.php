@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Log;
 
 class EstadoMBoxConsultaVariosRequest extends FormRequest
 {
@@ -24,8 +23,8 @@ class EstadoMBoxConsultaVariosRequest extends FormRequest
     {
 
         return [
-            'estadosMBox' => [ 'required', 'array'],
-            'estadosMBox.*' => [ 'required', 'string']
+            'estadosMBox' => ['required', 'array'],
+            'estadosMBox.*' => ['required', 'string'],
         ];
     }
 }

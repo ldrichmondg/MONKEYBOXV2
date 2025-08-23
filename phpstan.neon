@@ -1,0 +1,5 @@
+parameters:
+    level: max               # Nivel de análisis, de 0 a max
+    paths:
+        - app                # Carpetas a analizar
+

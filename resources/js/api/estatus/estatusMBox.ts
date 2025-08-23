@@ -1,6 +1,11 @@
 
 import { EstatusTable } from '@/types/table'
 
+interface estatusMBOXResponse {
+    DESCRIPCION: string,
+    COLORCLASS: string
+}
+
 export async function obtenerEstatusMBox( estatus: string[] ): Promise<EstatusTable[] | null> {
 
     try{
@@ -18,10 +23,10 @@ export async function obtenerEstatusMBox( estatus: string[] ): Promise<EstatusTa
         });
 
         if (!response.ok) {
-            throw new Error(response.json());
+            throw new Error(JSON.stringify(response.json()));
         }
 
-        const data = await response.json();
+        const data: estatusMBOXResponse[] = await response.json();
         const estatusMBox: EstatusTable[] = [];
         data.forEach(estado => {
             estatusMBox.push({

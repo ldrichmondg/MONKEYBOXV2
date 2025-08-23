@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -17,8 +16,7 @@ class EmailRegistroUsuario extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(protected User $usuario)
-    {}
+    public function __construct(protected User $usuario) {}
 
     /**
      * Get the message envelope.
@@ -44,6 +42,7 @@ class EmailRegistroUsuario extends Mailable
             ],
         );
     }
+
     /**
      * Get the attachments for the message.
      *

@@ -14,7 +14,7 @@ class SeederUsuario extends Seeder
      */
     public function run(): void
     {
-        //ver los campos que debe tener la migracion
+        // ver los campos que debe tener la migracion
         $users = [
             [
                 'NOMBRE' => 'Jairo',
@@ -66,10 +66,10 @@ class SeederUsuario extends Seeder
                 'email_verified_at' => Carbon::now(),
                 'IDPERFIL' => 3,
             ],
-            
+
         ];
 
-        foreach($users as $usuario){
+        foreach ($users as $usuario) {
             User::create($usuario);
         }
 
