@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Combobox } from '@/ownComponents/combobox';
 
 import TagInput from '@/ownComponents/tagInput';
+import AlertError from '@/ownComponents/alertError';
 import { Import, MoreHorizontal, MoveRight, RefreshCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -62,17 +63,6 @@ export const columns: ColumnDef<TrackingConsultadosTable>[] = [
             );
         },
         cell: ({ row }) => <div className="capitalize">{row.getValue('idTracking')}</div>,
-    },
-    {
-        accessorKey: 'trackingProveedor',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Tracking Proveedor
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('trackingProveedor')}</div>,
     },
     {
         accessorKey: 'nombreCliente',
@@ -219,6 +209,10 @@ type CardData = {
 
 interface Props extends PageProps {
     clientes: ComboBoxItem[];
+    flash?: {
+        success?: string;
+        error?: string;
+    };
 }
 
 function CardClienteTracking({
@@ -231,7 +225,8 @@ function CardClienteTracking({
     onChange: (newData: CardData) => void;
     cardCliente: CardData;
     isActive: boolean;
-}): React.ReactElement {
+}): React.ReactElement
+{
     const [tags, setTags] = useState<TagifyTag[]>([]);
     const handleCambioCliente = (idSeleccionado: number) => {
         const cliente = clientes.find((c) => c.id === idSeleccionado);
@@ -292,9 +287,9 @@ function CardClienteTracking({
 
 export default function RegistroMasivo() {
     const { props } = usePage<Props>();
-    const { clientes } = props;
+    const { clientes, flash } = props;
     const [cards, setCards] = useState<CardData[]>([]);
-    const [btnBuscarActive, setBtnBuscarActive] = useState(true); //el valor real es false
+    const [btnBuscarActive, setBtnBuscarActive] = useState(false); //el valor real es false
     const [loading, setLoading] = useState(false); //debe estar como false
     const [showSpinner, setShowSpinner] = useState(false);
     const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
@@ -306,6 +301,8 @@ export default function RegistroMasivo() {
     useEffect(() => {
         cargarProveedores(setProveedores);
     }, []);
+
+    //por si hay
 
     const agregarCard = () => {
         setCards((prev) => [...prev, { idCliente: -1, trackings: [], nombreCliente: '' }]);
@@ -399,6 +396,10 @@ export default function RegistroMasivo() {
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
             <Head title="Registro" />
             <MainContainer>
+
+                {/* Si hay algun error de una vista a donde tenia que ir y la devuelve a esta */}
+                <AlertError flash={flash}/>
+
                 {cards.map((cardData, index) => (
                     <CardClienteTracking
                         key={index}
@@ -473,7 +474,7 @@ export default function RegistroMasivo() {
                                                                             ? row.original.valor
                                                                             : (row.original.descripcion ?? '')
                                                                     }
-                                                                    disabled={preealertando}
+                                                                    disabled={preealertando || row.original.estatus.descripcion != 'Sin Prealertar'}
                                                                     error={row.original.errores.find(
                                                                         (error) => error.name == cell.column.id + '-' + row.original.idTracking,
                                                                     )}
@@ -486,10 +487,11 @@ export default function RegistroMasivo() {
                                                                     onChange={(idSeleccionado) =>
                                                                         AgregarProveedor(idSeleccionado, proveedores, row.original, setTrackings)
                                                                     }
-                                                                    isActive={row.original.trackingCompleto == true && !preealertando}
+                                                                    isActive={row.original.trackingCompleto == true && !preealertando && row.original.estatus.descripcion == 'Sin Prealertar'}
                                                                     error={row.original.errores.find(
                                                                         (error) => error.name == 'idProveedor-' + row.original.idTracking,
                                                                     )}
+                                                                    idSelect={row.original.idProveedor}
                                                                 ></Combobox>
                                                             ) : (
                                                                 flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -560,7 +562,8 @@ async function InsertarDatosTabla(
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     cards: CardData[],
-): Promise<TrackingConsultadosTable[]> {
+): Promise<TrackingConsultadosTable[]>
+{
     //0. Mostrar el spinner
     //1. Hacer el request del archivo de configuracion para obtener el valor
     //2. Pasar la información de los cards a objetos tracking
@@ -586,7 +589,7 @@ async function InsertarDatosTabla(
             /* Si el estado no se carga, entonces se usa el que se sabe */
             estadoSinRegistrar = [
                 {
-                    descripcion: 'Sin Preealertar',
+                    descripcion: 'Sin Prealertar',
                     colorClass: 'bg-transparent border-pink-300 text-pink-300',
                 },
             ];
@@ -713,6 +716,8 @@ async function RegistrarTrackings(
                                 ? {
                                       ...item,
                                       id: responseTracking.id,
+                                      descripcion:responseTracking.descripcion,
+                                      idProveedor: responseTracking.idProveedor,
                                       desde: responseTracking.desde,
                                       hasta: responseTracking.hasta,
                                       destino: responseTracking.destino,
@@ -804,9 +809,10 @@ function VerificarPuedePreealertar(setPuedePreealertar: React.Dispatch<React.Set
     try {
         const cantidadTrackingsCompletos = trackings.filter((tracking) => tracking.trackingCompleto == true).length;
         const cantidadTrackingsParaPreealertar = trackings.filter(
-            (tracking) => tracking.idProveedor != null && tracking.valor !== -1 && tracking.descripcion !== '',
+            (tracking) => tracking.idProveedor != null && tracking.valor !== -1 && tracking.descripcion !== '' && tracking.estatus.descripcion == 'Sin Prealertar',
         ).length;
 
+        console.log('Tracking completos: '+ cantidadTrackingsCompletos + ' para prealertar: ' + cantidadTrackingsParaPreealertar)
         const puedePreealertar: boolean = cantidadTrackingsCompletos == cantidadTrackingsParaPreealertar && cantidadTrackingsParaPreealertar != 0;
 
         setPuedePreealertar(puedePreealertar);
@@ -828,7 +834,7 @@ async function PreealertarTracking(
 ) {
     // 1. Se va a poner la variable en preealertando, para indicar que se esta prealertando
     // 2. Se va a recorrer cada tracking
-    // 2.1. Se va a cambiar el estado de sin preealertar a preealertando
+    // 2.1. Se va a cambiar el estado de sin prealertar a preealertando
     // 2.2  Se envia un request de ese tracking para hacerle la prealerta
     // 3. Si se logro la preealerta, se pone el estado como preealertado y se pone el T.Prov (por el momento si es de aeropost)
     // 3.1 Si no se logra, poner en estado no se logro prealerta ( => su estado sigue siendo sin preealertado)
@@ -840,7 +846,7 @@ async function PreealertarTracking(
         // 2. Se va a recorrer cada tracking
         for (const trackingFor of trackings) {
             //esto es para que se pueda ir secuencial poniendo los estados
-            // 2.1. Se va a cambiar el estado de sin preealertar a preealertando
+            // 2.1. Se va a cambiar el estado de sin prealertar a preealertando
             setTrackings((prev) =>
                 prev.map((tracking) =>
                     trackingFor.idTracking == tracking.idTracking && tracking.trackingCompleto
@@ -931,10 +937,7 @@ async function PreealertarTracking(
 
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
-                ErrorModal(
-                    'No se obtuvo respuesta del tracking que se prealertó',
-                    'No se obtuvo respuesta del tracking a prealertar. Intente de nuevo o comuniquese con el departamento de TI.',
-                );
+                //lo atrapa, pero no hace nada porque adminErrores ya lo hace
             }
             /*
              trackingFor.idTracking == tracking.idTracking && tracking.trackingCompleto

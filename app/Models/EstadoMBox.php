@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class EstadoMBox extends Model
 {
-    protected $fillable = ['DESCRIPCION', 'COLORCLASS'];
+    protected $fillable = ['DESCRIPCION', 'COLORCLASS', 'ORDEN'];
 
     protected $table = 'estadombox';
 

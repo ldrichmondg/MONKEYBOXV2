@@ -24,10 +24,7 @@ class EstadoMBoxController extends Controller
         } catch (\Exception $e) {
             Log::error('[EstadoMBoxController->DetallesJson] error:'.$e);
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Algo ocurrió al buscar estadosMBox. Ver el Log',
-            ], 500); // 500 = Internal Server Error
+            return response()->error('Algo ocurrió al buscar estadosMBox. Ver el Log'); // 500 = Internal Server Error
         }
     }
 }

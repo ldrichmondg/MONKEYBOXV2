@@ -47,6 +47,8 @@ class Tracking extends Model
         'FECHAENTREGA',
         'RUTAFACTURA',
         'ESTADOMBOX',
+        'OBSERVACIONES',
+        'ESTADOSINCRONIZADO'
     ];
 
     /**
@@ -149,8 +151,14 @@ class Tracking extends Model
         return $this->belongsTo(EstadoMBox::class, 'ESTADOMBOX', 'DESCRIPCION');
     }
 
+    public function estadoSincronizado(): BelongsTo
+    {
+        return $this->belongsTo(EstadoMBox::class, 'ESTADOSINCRONIZADO', 'DESCRIPCION');
+    }
+
     public function trackingProveedor(): HasOne
     {
         return $this->hasOne(TrackingProveedor::class, 'IDTRACKING', 'id');
     }
+
 }

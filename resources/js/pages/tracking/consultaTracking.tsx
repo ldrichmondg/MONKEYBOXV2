@@ -35,8 +35,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import * as React from 'react';
 
 import { iconMap } from '@/lib/iconMap';
-import { TrackingTable } from '@/types/tracking';
+import { TrackingConsultadosTable, TrackingTable } from '@/types/tracking';
 import { WithActions } from '@/types/table';
+import { useEffect, useState } from 'react';
+
+interface Props {
+    trackings: TrackingTable[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -55,14 +60,14 @@ const buttons: ButtonHeader[] = [
     },
 ];
 
-export default function ConsultaTracking() {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-    const [rowSelection, setRowSelection] = React.useState({});
+export default function ConsultaTracking({trackings}: Props) {
+    const [sorting, setSorting] = useState<SortingState>([]);
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [rowSelection, setRowSelection] = useState({});
 
     const table = useReactTable({
-        data,
+        data: trackings,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -93,8 +98,8 @@ export default function ConsultaTracking() {
                             <div className="flex flex-1 items-center justify-end">
                                 <Input
                                     placeholder="Filter emails..."
-                                    value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-                                    onChange={(event) => table.getColumn('email')?.setFilterValue(event.target.value)}
+                                    value={(table.getColumn('descripcion')?.getFilterValue() as string) ?? ''}
+                                    onChange={(event) => table.getColumn('descripcion')?.setFilterValue(event.target.value)}
                                     className="max-w-sm"
                                 />
                                 <DropdownMenu>
@@ -191,171 +196,6 @@ export default function ConsultaTracking() {
         </AppLayout>
     );
 }
-
-const data: TrackingTable[] = [
-    {
-        id: 1,
-        idTracking: '420456535453664',
-        nombreCliente: 'Luis Richmond',
-        descripcion: 'ROPA',
-        desde: '',
-        hasta: 'MIAMI, FL 4092',
-        destino: '',
-        couriers: 'USPS, DHL',
-        estatus: {descripcion: 'Sin Preealerta', colorClass: 'bg-transparent border-pink-300 text-pink-300'},
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            },
-            {
-                descripcion: 'Eliminar',
-                icon: 'Trash2',
-                route: route('dashboard'),
-                actionType: 'Eliminar',
-                actionMessage: 'Estas seguro de eliminar el tracking #420456535453664 ?',
-                actionModalTitle: 'Eliminar Tracking',
-                isActive: true
-            },
-        ]
-
-    },
-    {
-        id: 2,
-        idTracking: '994488112233',
-        nombreCliente: 'María González',
-        descripcion: 'Zapatos deportivos',
-        desde: 'Warehouse LA',
-        hasta: 'San José, CR',
-        destino: 'Pavas',
-        couriers: 'FedEx',
-        estatus: { descripcion: 'Entregado', colorClass: 'bg-transparent border-purple-300 text-purple-300' },
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            },
-            {
-                descripcion: 'Eliminar',
-                icon: 'Trash2',
-                route: route('dashboard'),
-                actionType: 'Eliminar',
-                actionMessage: '¿Seguro que desea eliminar el tracking #994488112233?',
-                actionModalTitle: 'Eliminar Tracking',
-                isActive: true
-            },
-        ]
-    },
-    {
-        id: 3,
-        idTracking: '558899776655',
-        nombreCliente: 'Carlos Méndez',
-        descripcion: 'Electrónica',
-        desde: '',
-        hasta: 'Heredia, CR',
-        destino: 'Heredia centro',
-        couriers: 'UPS',
-        estatus: { descripcion: 'Tránsito CR', colorClass: 'bg-transparent border-blue-400 text-blue-400' },
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            }
-        ]
-    },
-    {
-        id: 4,
-        idTracking: '882244668800',
-        nombreCliente: 'Fernanda Araya',
-        descripcion: 'Libros y papelería',
-        desde: 'Amazon',
-        hasta: 'Alajuela, CR',
-        destino: 'Grecia',
-        couriers: 'Amazon Logistics',
-        estatus: { descripcion: 'Facturado', colorClass: 'bg-transparent border-green-400 text-green-400' },
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            }
-        ]
-    },
-    {
-        id: 5,
-        idTracking: '223344556677',
-        nombreCliente: 'Kevin Mora',
-        descripcion: 'Componentes de PC',
-        desde: 'Newegg',
-        hasta: '',
-        destino: '',
-        couriers: 'DHL',
-        estatus: { descripcion: 'Recibido Miami', colorClass: 'bg-transparent border-sky-400 text-sky-400' },
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            },
-            {
-                descripcion: 'Eliminar',
-                icon: 'Trash2',
-                route: route('dashboard'),
-                actionType: 'Eliminar',
-                actionMessage: '¿Seguro que desea eliminar el tracking #223344556677?',
-                actionModalTitle: 'Eliminar Tracking',
-                isActive: false
-            },
-        ]
-    },
-    {
-        id: 6,
-        idTracking: '776655443322',
-        nombreCliente: 'Andrea Navarro',
-        descripcion: 'Accesorios para mascotas',
-        desde: 'Etsy',
-        hasta: 'Cartago, CR',
-        destino: 'El Tejar',
-        couriers: 'USPS',
-        estatus: { descripcion: 'Proceso Aduana', colorClass: 'bg-transparent border-gray-200 text-gray-200' },
-        actions: [
-            {
-                descripcion: 'Detalle',
-                icon: 'Edit',
-                route: route('dashboard'),
-                actionType: 'GET',
-                isActive: true
-            },
-            {
-                descripcion: 'Eliminar',
-                icon: 'Trash2',
-                route: route('dashboard'),
-                actionType: 'Eliminar',
-                actionMessage: '¿Está seguro de eliminar el tracking #776655443322?',
-                actionModalTitle: 'Eliminar Tracking',
-                isActive: true
-            }
-        ]
-    }
-
-
-
-
-
-];
 
 export const columns: ColumnDef<TrackingTable>[] = [
     {

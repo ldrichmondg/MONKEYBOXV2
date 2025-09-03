@@ -5,6 +5,7 @@ namespace App\Models;
 use Diccionarios;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TrackingHistorial extends Model
@@ -27,6 +28,7 @@ class TrackingHistorial extends Model
         'IDCOURIER',
         'COSTARICA',
         'CLIENTE',
+        'PERTENECEESTADO'
     ];
 
     protected $dates = ['created_at', 'updated_at', 'deleted_at'];
@@ -46,4 +48,10 @@ class TrackingHistorial extends Model
     {
         return $this->belongsTo(Tracking::class, 'IDTRACKING');
     }
+
+    public function estadoMBox(): BelongsTo
+    {
+        return $this->belongsTo(EstadoMBox::class, 'PERTENECEESTADO', 'DESCRIPCION');
+    }
+
 }

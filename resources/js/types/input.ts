@@ -17,7 +17,7 @@ interface LaravelValidationErrorResponse {
 }
 
 export function parseLaravelValidationErrors(responseJson: LaravelValidationErrorResponse): ErrorInput[] {
-    const errores: ErrorInput[] = [];
+    const errores: InputError[] = [];
 
     if (responseJson && responseJson.errors) {
         for (const [field, messages] of Object.entries(responseJson.errors)) {

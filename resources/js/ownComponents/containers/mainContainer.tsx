@@ -6,7 +6,7 @@ interface MainContainerProps {
 
 export function MainContainer({ className = "" , children }: MainContainerProps) {
     return (
-        <div className={"flex h-100 justify-center" + className} >
+        <div className={"flex h-100 justify-center " + className} >
             <div className="w-[97%]">
                 {children}
             </div>

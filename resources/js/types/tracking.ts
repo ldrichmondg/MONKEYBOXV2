@@ -2,6 +2,7 @@
 import { WithActions, EstatusTable } from './table';
 import { PrealertaBase } from '@/types/prealerta';
 import {ErroresInputs} from '@/types/input';
+import { HistorialTracking } from '@/types/historialTracking';
 
 export interface TrackingBase {
     id: number;
@@ -45,6 +46,21 @@ export interface TrackingConPrealertaBase extends TrackingBase {
 
 export interface TrackingConPrealertaBaseProveedor extends TrackingConProveedor, TrackingConPrealertaBase, ErroresInputs, TrackingTable{
 
+}
+
+export interface TrackingCompleto extends TrackingBase {
+    peso: number;
+    idProveedor: number;
+    idCliente: number;
+    observaciones: string;
+    estatus: string;
+    ordenEstatus: number;
+    estadoSincronizado: string;
+    ordenEstatusSincronizado: number;
+    historialesTracking: HistorialTracking[];
+    nombreProveedor: string;
+    trackingProveedor: string;
+    diasTransito: number;
 }
 
 

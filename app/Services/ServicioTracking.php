@@ -62,7 +62,7 @@ class ServicioTracking
         try {
 
             $direccionPrincipalCliente = Cliente::find($idCliente)->direccionPrincipal;
-            $estadoSinPreealerta = ServicioEstadoMBox::ObtenerEstadosMBox(['Sin Preealertar'])[0];
+            $estadoSinPreealerta = ServicioEstadoMBox::ObtenerEstadosMBox(['Sin Prealertar'])[0];
             $shipment = $dataParcelsApp['shipments'][0];
             $attributes = $shipment['attributes'];
             $arrayCarries = $shipment['carriers'];
@@ -80,6 +80,7 @@ class ServicioTracking
             $tracking->IDDIRECCION = $direccionPrincipalCliente->id;
             $tracking->IDUSUARIO = Auth::user()->id ?? 1;
             $tracking->ESTADOMBOX = $estadoSinPreealerta->DESCRIPCION;
+            $tracking->ESTADOSINCRONIZADO = $estadoSinPreealerta->DESCRIPCION;
             //
             $tracking->save();
 
@@ -119,7 +120,8 @@ class ServicioTracking
                     $historial->CODIGOPOSTAL = $lugar[1];
                     $historial->OCULTADO = false;
                     $historial->TIPO = TipoHistorialTracking::API->value;
-                    $historial->FECHA = (new DateTime($state['date']))->format('Y-m-d H:i:s');
+                    $historial->created_at = (new DateTime($state['date']))->format('Y-m-d H:i:s');
+                    $historial->updated_at = (new DateTime($state['date']))->format('Y-m-d H:i:s');
                     $historial->IDCOURIER = $tracking->courrierNombreAId($arrayCarries[$courierCodigoJson]);
                     $historial->IDTRACKING = $tracking->id;
 

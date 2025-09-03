@@ -50,7 +50,7 @@ class TrackingRecienPrealertadoConProveedorResource extends JsonResource
                 [
                     'descripcion' => 'Detalle',
                     'icon' => 'Edit',
-                    'route' => route('usuario.tracking.detalle.vista'), // falta lo de poner el #id
+                    'route' => route('usuario.tracking.detalle.vista', ['id' => $this->id]), // falta lo de poner el #id
                     'actionType' => 'GET',
                     'isActive' => true,
                 ],

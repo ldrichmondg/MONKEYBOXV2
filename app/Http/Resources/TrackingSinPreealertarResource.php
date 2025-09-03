@@ -21,10 +21,14 @@ class TrackingSinPreealertarResource extends JsonResource
             ];
         }
 
+        $descripcionPrealerta = optional(optional($this->trackingProveedor)->prealerta)->DESCRIPCION ?: '';
+        $idProveedor = optional($this->trackingProveedor)->IDPROVEEDOR;
         return [
             'id' => $this->id,
             'idTracking' => $this->IDTRACKING,
             'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
+            'idProveedor' => $idProveedor,
+            'descripcion' => $descripcionPrealerta,
             'idCliente' => $this->direccion->cliente->id,
             'desde' => empty($this->DESDE) ? 'N/A' : $this->DESDE,
             'hasta' => empty($this->HASTA) ? 'N/A' : $this->HASTA,
@@ -37,7 +41,7 @@ class TrackingSinPreealertarResource extends JsonResource
                 [
                     'descripcion' => 'Detalle',
                     'icon' => 'Edit',
-                    'route' => route('usuario.tracking.detalle.vista'), // falta lo de poner el #id
+                    'route' => route('usuario.tracking.detalle.vista', ['id' => $this->id]), //$this->id falta lo de poner el #id
                     'actionType' => 'GET',
                     'isActive' => true,
                 ],

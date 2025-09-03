@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::table('tracking', function (Blueprint $table) {
             $table->string('ESTADOMBOX', 35);
             $table->foreign('ESTADOMBOX')->references('DESCRIPCION')->on('estadombox');
-
+            $table->string('ESTADOSINCRONIZADO', 35);
+            $table->foreign('ESTADOSINCRONIZADO')->references('DESCRIPCION')->on('estadombox');
         });
     }
 
@@ -23,6 +24,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('tracking', function (Blueprint $table) {
+            // 1. Drop foreign key
+            $table->dropForeign(['ESTADOMBOX']);
+            // o explícito: $table->dropForeign('tracking_ESTADOMBOX_foreign');
+
+            // 2. Drop column
+            $table->dropColumn('ESTADOMBOX');
+        });
     }
 };

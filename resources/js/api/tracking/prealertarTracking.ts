@@ -1,13 +1,13 @@
 import { TrackingConPrealertaBaseProveedor } from '@/types/tracking';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { parseLaravelValidationErrors } from '@/types/input';
+import { administracionErrores } from '@/api/administracionErrores/administracionErrores';
 
-export async function PrealertarTracking(tracking : TrackingConPrealertaBaseProveedor): TrackingConPrealertaBaseProveedor | null {
+export async function PrealertarTracking(tracking: TrackingConPrealertaBaseProveedor): Promise<TrackingConPrealertaBaseProveedor | null> {
     // 1. Se ejecuta el request
     // 2. Retorna un TrackingConPrealertaBaseProveedor, sino null
 
-    try{
-
+    try {
         const response = await fetch(route('usuario.prealerta.registro.json'), {
             method: 'POST',
             headers: {
@@ -32,24 +32,20 @@ export async function PrealertarTracking(tracking : TrackingConPrealertaBaseProv
             return tracking; // devuelves tracking con errores
         }
 
-        if (response.status === 419) {
-            // CSRF token expirado
-            ErrorModal('Sesión expirada', 'Tu sesión ha expirado, por favor recarga la página.');
-            return null;
+        // Otros errores HTTP
+        if (!response.ok) {
+            // Pasar response a tu función de administración de errores
+            await administracionErrores(response, 'Error al crear la prealerta');
+            throw new Error('Error al crear la prealerta');
         }
 
-        if (response.status === 500) {
-            ErrorModal('Error al registrar la prealerta', 'Hubo un error al registrar la prealerta');
-            return null;
-        }
-
-        const data: TrackingConPrealertaBaseProveedor  = await response.json();
+        const data: TrackingConPrealertaBaseProveedor = await response.json();
         data.errores = []; //como no hay errores, ponerlo vacio
 
         return data;
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-        console.log('[API->PreealertarTracking->PT] error: ' + e);
-        return null
+        return null;
     }
 }

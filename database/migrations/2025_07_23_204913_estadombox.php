@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('estadombox', function (Blueprint $table) {
             $table->string('DESCRIPCION', 35)->primary();
             $table->string('COLORCLASS', 100);
+            $table->smallInteger('ORDEN');
         });
     }
 

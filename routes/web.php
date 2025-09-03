@@ -20,7 +20,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // RUTAS TRACKING
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/tracking/consulta/vista', [TrackingController::class, 'ConsultaVista'])->name('tracking.consulta.vista');
     Route::get('/tracking/registro/vista', [TrackingController::class, 'RegistroMasivoVista'])->name('tracking.registroMasivo.vista');
 });
 

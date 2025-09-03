@@ -19,12 +19,9 @@ return new class extends Migration
             $table->string('PAISESTADO', 75);
             $table->boolean('OCULTADO');
             $table->smallInteger('TIPO');
-            $table->dateTime('FECHA');
             $table->unsignedBigInteger('IDTRACKING');
             $table->foreign('IDTRACKING')->references('id')->on('tracking')->onDelete('cascade');
             $table->date('FECHA')->nullable()->change();
-            $table->boolean('COSTARICA')->default(false);
-            $table->boolean('CLIENTE')->default(false);
             $table->softDeletes();
             $table->timestamps();
             $table->smallInteger('IDCOURIER');

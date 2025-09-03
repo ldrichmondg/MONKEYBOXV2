@@ -12,9 +12,11 @@ use Illuminate\Support\Facades\Route;
 
 // RUTAS TRACKING
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/tracking/registro/guardar', [TrackingController::class, 'RegistroJson'])->name('usuario.tracking.registro.guardar');
 
-    Route::get('/tracking/detalle/vista', [TrackingController::class, 'Detalle'])->name('usuario.tracking.detalle.vista');
+    Route::get('/tracking/consulta/vista', [TrackingController::class, 'ConsultaVista'])->name('tracking.consulta.vista');
+    Route::post('/tracking/registro/guardar', [TrackingController::class, 'RegistroJson'])->name('usuario.tracking.registro.guardar');
+    Route::get('/tracking/detalle/vista/{id}', [TrackingController::class, 'Detalle'])->name('usuario.tracking.detalle.vista');
+    Route::get('/tracking/consulta/json', [TrackingController::class, 'ConsultaJson'])->name('usuario.tracking.consulta.json');
 });
 
 // RUTAS CONFIGURACION

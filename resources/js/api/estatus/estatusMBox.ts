@@ -1,5 +1,5 @@
-
 import { EstatusTable } from '@/types/table'
+import { administracionErrores } from '@/api/administracionErrores/administracionErrores';
 
 interface estatusMBOXResponse {
     DESCRIPCION: string,
@@ -23,7 +23,8 @@ export async function obtenerEstatusMBox( estatus: string[] ): Promise<EstatusTa
         });
 
         if (!response.ok) {
-            throw new Error(JSON.stringify(response.json()));
+            await administracionErrores(response, 'Error al crear la prealerta');
+            throw new Error('No se cargaron los estados');
         }
 
         const data: estatusMBOXResponse[] = await response.json();

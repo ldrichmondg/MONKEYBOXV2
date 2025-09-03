@@ -2,15 +2,34 @@
 
 namespace App\Services;
 
+use App\Exceptions\ExceptionAPCourierNoObtenido;
+use App\Exceptions\ExceptionAPCouriersNoObtenidos;
+use App\Exceptions\ExceptionAPRequestRegistrarPrealerta;
+use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Http\Requests\RequestCrearPrealerta;
-use App\Models\Prealerta;
 use App\Models\Proveedor;
 use App\Models\Tracking;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ServicioPrealerta
 {
+    /**
+     * Guarda una prealerta de cualquier proveedor
+     *
+     * @param RequestCrearPrealerta $request
+     * @return Tracking
+     * @throws QueryException
+     * @throws ModelNotFoundException
+     * * @throws ExceptionAPCourierNoObtenido
+     * * @throws ExceptionAPCouriersNoObtenidos
+     * * @throws ExceptionAPTokenNoObtenido
+     * * @throws ExceptionAPRequestRegistrarPrealerta
+     * * @throws ConnectionException
+     */
     public static function RegistrarPrealerta(RequestCrearPrealerta $request): Tracking
     {
         // 1. Obtenemos el tracking mediante el idTracking
@@ -28,9 +47,9 @@ class ServicioPrealerta
             // 1. Obtenemos el tracking mediante el idTracking
             $tracking = Tracking::where('IDTRACKING', $request->idTracking)->firstOrFail();
 
-            // 2. Revisamos si el tracking tiene un estado = a 'sin preealertar'
+            // 2. Revisamos si el tracking tiene un estado = a 'sin prealertar'
             // 3. Si es igual, entonces se prealerta, sino se mantiene el estado que tiene
-            if ($tracking->estadoMBox->DESCRIPCION != 'Sin Preealertar') {
+            if ($tracking->estadoMBox->DESCRIPCION != 'Sin Prealertar') {
                 return $tracking; // sin cambios, asi como está xq si no es sin prealertar entonces esta en otro estado
             }
 
@@ -48,6 +67,7 @@ class ServicioPrealerta
 
             // 4.3 Se pasa el estado a 'prealertado'
             $tracking->ESTADOMBOX = 'Prealertado';
+            $tracking->ESTADOSINCRONIZADO = 'Prealertado';
             $tracking->save();
 
             $tracking->load('estadoMBox', 'trackingProveedor.prealerta', 'trackingProveedor');

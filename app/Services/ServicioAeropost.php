@@ -10,6 +10,7 @@ use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Models\Prealerta;
 use App\Models\Tracking;
 use App\Models\TrackingProveedor;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -17,11 +18,20 @@ use Illuminate\Support\Facades\Log;
 
 class ServicioAeropost
 {
+
     /**
+     * @param Tracking $tracking
+     * @param float $valor
+     * @param string $descripcion
+     * @param int $idProveedor
+     * @return Prealerta
      * @throws ConnectionException
+     * @throws ExceptionAPCourierNoObtenido
      * @throws ExceptionAPCouriersNoObtenidos
      * @throws ExceptionAPTokenNoObtenido
-     * @throws ExceptionAPCourierNoObtenido
+     * @throws ExceptionAPRequestRegistrarPrealerta
+     * @throws QueryException
+     *
      */
     public static function RegistrarPrealerta(Tracking $tracking, float $valor, string $descripcion, int $idProveedor): Prealerta
     {
@@ -71,10 +81,11 @@ class ServicioAeropost
     }
 
     /**
-     * @throws ExceptionAPTokenNoObtenido
+     * @return string
      * @throws ConnectionException
+     * @throws ExceptionAPTokenNoObtenido
      */
-    public static function ObtenerTokenAcceso(): string
+    private static function ObtenerTokenAcceso(): string
     {
         // 1. Obtener el token de acceso
         // 1.1 Si se tiene, solicitarlo desde la caché
@@ -133,6 +144,11 @@ class ServicioAeropost
 
     }
 
+    /**
+     * @return array que es el reponseAPI de todos los couriers de AP
+     * @throws ConnectionException
+     * @throws ExceptionAPCouriersNoObtenidos
+     */
     public static function ObtenerCouriers(): array
     {
         // 1. Verificar si los couriers estan en la cache
@@ -179,6 +195,12 @@ class ServicioAeropost
         return $couriers;
     }
 
+    /**
+     * @param array $couriers
+     * @param string $idTracking
+     * @return array
+     * @throws ExceptionAPCourierNoObtenido
+     */
     public static function ObtenerCourier(array $couriers, string $idTracking): array
     {
         // 1. Recorremos los couriers
@@ -187,13 +209,14 @@ class ServicioAeropost
         // 4. Si no cumple con ninguno, obtener el courier que es Other (en los docs el default es el courierId 0)
         $courierSeleccionado = null;
 
+
         // 1. Recorremos los couriers
         foreach ($couriers as $courier) {
             // 2. Obtenemos los regex de cada courier y los comparamos con el idTracking
             $regexActual = $courier['regex'];
-            Log::info($regexActual);
+
             // - Se excluye el courier de id 0 => Other/Default que no tiene el campo de regex
-            if ($courier['id'] == 0 /* || $courier['id'] == 9 */) {
+            if ($courier['id'] == 0 || $courier['id'] == 9) {
                 continue;
             }
 
@@ -218,11 +241,11 @@ class ServicioAeropost
             foreach ($couriers as $courier) {
                 $courierId = $courier['id'];
 
-                if (! $courierId) {
-                    Log::info('[ServicioAeropost,OC] El campo id en un elemento de courier no existe');
+                if (! isset($courierId)) { //isset porque si solo pongo !$courierId 0 me lo toma como false y entra cuando no deberia
+                    Log::info('[ServicioAeropost,OC] El campo id en un elemento de courier no existe'. json_encode($couriers));
                     throw new ExceptionAPCourierNoObtenido('El campo id en un elemento de courier no existe');
                 }
-                if ($courierId == 0) {
+                if ($courierId == 0 || $courier['id'] == 9) {
                     $courierDefault = $courier;
                     break;
                 }
@@ -239,7 +262,14 @@ class ServicioAeropost
     }
 
     /**
-     * @throws ConnectionException
+     * @param int $consigneeId
+     * @param int $courierId
+     * @param string $numeroTracking
+     * @param string $nombreTienda
+     * @param float $valor
+     * @param string $descripcion
+     * @return int
+     * @throws ExceptionAPRequestRegistrarPrealerta
      */
     public static function RequestRegistrarPrealerta(int $consigneeId, int $courierId, string $numeroTracking, string $nombreTienda, float $valor, string $descripcion): int
     {

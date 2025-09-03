@@ -28,6 +28,7 @@ return new class extends Migration
             $table->foreign('IDUSUARIO')->references('id')->on('users');
             $table->date('FECHAENTREGA')->nullable();
             $table->string('RUTAFACTURA')->nullable();
+            $table->string('OBSERVACIONES', 500)->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -78,8 +78,14 @@ class ServicioParcelsApp
         }
     }
 
+    /**
+     *
+     * @param $uuid
+     * @return array|null
+     */
     public static function VerificarEstadoSeguimiento($uuid): ?array
     {
+        // todo: Hacer exepcion unica para llaamda api de parcelsApp
         try {
             $apiKey = env('PARCELSAPP_API_KEY');
             $urlSeguimiento = env('PARCELSAPP_URL_SEGUIMIENTO');

@@ -8,6 +8,10 @@ interface InputProps extends React.ComponentProps<'input'> {
 }
 
 function Input({ className, type, error, ...props }: InputProps) {
+    const { readOnly } = props;
+    const readOnlyClases = ' border-0 focus-visible:!ring-0 focus-visible:!border-transparent !cursor-text !select-text shadow-none'
+    className = readOnly ? className + readOnlyClases : className;
+
     return (
         <>
             <input
