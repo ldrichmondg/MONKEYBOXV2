@@ -83,4 +83,8 @@ class Direccion extends Model
         return $objTipo[0]->NOMBRE;
 
     }
+
+    public function direccionCompleta(){
+        return $this->PAISESTADO. ', '. $this->DIRECCION;
+    }
 }

@@ -101,7 +101,7 @@ class Tracking extends Model
 
     public function historialesT(): HasMany
     {
-        return $this->hasMany(TrackingHistorial::class, 'IDTRACKING', 'id')->whereNull('deleted_at')->orderBy('FECHA', 'asc');
+        return $this->hasMany(TrackingHistorial::class, 'IDTRACKING', 'id')->whereNull('deleted_at')->orderBy('updated_at', 'asc');
     }
 
     public function ColorEstado($cotaRica, $entregado, $transito)

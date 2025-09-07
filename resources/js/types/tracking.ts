@@ -61,6 +61,7 @@ export interface TrackingCompleto extends TrackingBase {
     nombreProveedor: string;
     trackingProveedor: string;
     diasTransito: number;
+    idDireccion: number;
 }
 
 

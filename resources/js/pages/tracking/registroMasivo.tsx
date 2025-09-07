@@ -939,18 +939,6 @@ async function PreealertarTracking(
             } catch (e) {
                 //lo atrapa, pero no hace nada porque adminErrores ya lo hace
             }
-            /*
-             trackingFor.idTracking == tracking.idTracking && tracking.trackingCompleto
-                        ? {
-                              ...tracking,
-                              estatus: {
-                                  descripcion: 'preealertando...',
-                                  colorClass: 'bg-transparent border-gray-400 text-gray-400',
-                              },
-
-                          }
-                        : tracking,
-             */
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars

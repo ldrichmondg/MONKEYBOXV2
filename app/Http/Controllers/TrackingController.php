@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTransformers\ModelToIdDescripcionDTO;
 use App\Http\Requests\RequestTrackingRegistro;
+use App\Http\Resources\ClientesComboboxItemsResource;
 use App\Http\Resources\TrackingConsultadosTableResource;
 use App\Http\Resources\TrackingDetalleResource;
 use App\Http\Resources\TrackingSinPreealertarResource;
+use App\Models\Cliente;
+use App\Models\Direccion;
 use App\Models\Tracking;
 use App\Services\ServicioCliente;
 use App\Services\ServicioTracking;
@@ -96,8 +100,10 @@ class TrackingController
     public function Detalle(int $id): Response|RedirectResponse // tengo que poner un request para verificar que el id del tracking existe
     {
         try {
-            $tracking = Tracking::findOrFail($id);
-            return Inertia::render('tracking/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve()]);
+            $tracking = Tracking::with('historialesT')->findOrFail($id);
+            $direcciones = ModelToIdDescripcionDTO::map(Direccion::where('IDCLIENTE', $tracking->direccion->cliente->id)->get());
+
+            return Inertia::render('tracking/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve(), 'direcciones' => $direcciones]);
 
         } catch (ModelNotFoundException $e) {
 

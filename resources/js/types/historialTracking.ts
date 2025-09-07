@@ -1,13 +1,16 @@
 import { WithActions } from '@/types/table';
 
-export interface HistorialTracking extends WithActions{
+export interface HistorialTracking extends WithActions {
+    id:number;
     descripcion: string;
     descripcionModificada: string;
-    codigoPostal: number,
+    codigoPostal: number;
     paisEstado: number;
     ocultado: boolean;
     tipo: number;
-    fecha: Date;
+    fecha: string;
+    hora: string;
     idTracking: number;
-    perteneceEstado: string|null;
+    perteneceEstado: string | null;
+    historial?: HistorialTracking;
 }
