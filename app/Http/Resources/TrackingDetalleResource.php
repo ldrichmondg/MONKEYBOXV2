@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class TrackingDetalleResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        $idProveedor = optional($this->trackingProveedor)->IDPROVEEDOR;
+        $nombreProveedor = optional(optional($this->trackingProveedor)->proveedor)->NOMBRE;
+        return [
+            'id' => $this->id,
+            'idTracking' => $this->IDTRACKING,
+            'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
+            'descripcion' => empty($this->DESCRIPCION) ? '' : $this->DESCRIPCION,
+            'desde' => empty($this->DESDE) ? 'N/A' : $this->DESDE,
+            'hasta' => empty($this->HASTA) ? 'N/A' : $this->HASTA,
+            'destino' => empty($this->DESTINO) ? 'N/A' : $this->DESTINO,
+            'couriers' => $this->COURIER,
+            'diasTransito' => empty($this->DIASTRANSITO) ? 'N/A' : $this->DIASTRANSITO,
+            'peso' => $this->PESO,
+            'idProveedor' => $idProveedor,
+            'nombreProveedor' => $nombreProveedor,
+            'idCliente' => $this->direccion->cliente->id,
+            'idDireccion' => $this->direccion->id,
+            'observaciones' => empty($this->OBSERVACIONES) ? '' : $this->OBSERVACIONES,
+            'estatus' => $this->ESTADOMBOX,
+            'ordenEstatus' => $this->estadoMBox->ORDEN,
+            'estatusSincronizado' => $this->ESTADOSINCRONIZADO,
+            'ordenEstatusSincronizado' => $this->estadoSincronizado->ORDEN,
+            'historialesTracking' => HistorialTrackingDetalleResource::collection($this->whenLoaded('historialesT'))->resolve(),
+            'trackingProveedor' => optional($this->trackingProveedor)->TRACKINGPROVEEDOR,
+            ];
+    }
+}
