@@ -6,23 +6,36 @@ import InputFloatingLabel from '@/ownComponents/inputFloatingLabels';
 import { WhatsappIcon } from '@/ownComponents/svgs/whatsApp';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
 import { TrackingCompleto } from '@/types/tracking';
-import { Head } from '@inertiajs/react';
-import { Box, CircleX, MoveRight, RotateCcw } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { History, LucideIcon, MoreHorizontal } from 'lucide-react';
+import { Box, Calendar, CircleX, Clock4, MoveRight, Plus, RotateCcw } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Combobox } from '@/ownComponents/combobox';
 
 //api calls
 import { cargarProveedores } from '@/servicesFront/proveedor/servicioFrontProveedores';
-import { Skeleton } from '@/components/ui/skeleton';
+import { iconMap } from '@/lib/iconMap';
+import { EliminarModal } from '@/ownComponents/modals/eliminarModal';
+import { HistorialTracking } from '@/types/historialTracking';
 
 
 interface Props {
     tracking: TrackingCompleto;
+    clientes: ComboBoxItem[],
+    direcciones: ComboBoxItem[],
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,20 +75,21 @@ const buttons: ButtonHeader[] = [
     },
 ];
 
-export default function DetalleTracking({ tracking }: Props) {
+export default function DetalleTracking({ tracking, clientes, direcciones }: Props) {
     const [ordenEstado, setOrdenEstado] = useState<number>();
     const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
-    const [clientes, setClientes] = useState<ComboBoxItem[]>([]);
-    const [direcciones, setDirecciones] = useState<ComboBoxItem[]>([]);
+    const [direccionesFront, setDireccionesFront] = useState<ComboBoxItem[]>(direcciones);
+    const [trackingFront, setTracking] = useState<TrackingCompleto>(tracking);
+    const [historialesBocetos, setHistorialesBocetos] = useState<HistorialTracking[]>([]);
 
     useEffect(() => {
         cargarProveedores(setProveedores);
     }, []);
 
-    console.log(tracking);
+    //console.log(trackingFront);
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
-            <Head title={tracking.idTracking + '- MBox'} />
+            <Head title={trackingFront.idTracking + '- MBox'} />
             <MainContainer>
                 <div className="flex w-full gap-4 pt-3">
                     <Card className="flex w-[25%] max-w-[55%] flex-col px-[0.9rem] py-3 xl:w-[55%] xl:max-w-[25%]">
@@ -90,16 +104,16 @@ export default function DetalleTracking({ tracking }: Props) {
                         </CardHeader>
 
                         <CardContent className={'flex flex-col p-0'}>
-                            <p className="font-bold text-gray-500"> {tracking.idTracking}</p>
-                            {tracking.nombreProveedor == 'MiLocker' ? (
+                            <p className="font-bold text-gray-500"> {trackingFront.idTracking}</p>
+                            {trackingFront.nombreProveedor == 'MiLocker' ? (
                                 <Input
                                     id="trackingProveedor"
                                     className="text-bold"
                                     placeholder="Indique el #proveedor..."
-                                    value={tracking.trackingProveedor}
+                                    value={trackingFront.trackingProveedor}
                                 />
                             ) : (
-                                <p className="text-bold"> {tracking.trackingProveedor} </p>
+                                <p className="text-bold"> {trackingFront.trackingProveedor} </p>
                             )}
                         </CardContent>
                     </Card>
@@ -200,8 +214,8 @@ export default function DetalleTracking({ tracking }: Props) {
                     </Card>
                 </div>
 
-                <div className="py-3">
-                    <Card className="flex w-[50%] max-w-[50%] flex-col p-0">
+                <div className="py-3 grid grid-cols-1 lg:flex lg:flex-row justify-between">
+                    <Card className="flex flex-col w-[100%] max-w-[100%] lg:w-[49.5%] lg:max-w-[49.5%] h-auto lg:max-h-[70vh] p-0">
                         <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Encabezado Tracking</p>
                             <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500">
@@ -214,8 +228,8 @@ export default function DetalleTracking({ tracking }: Props) {
                                 <InputFloatingLabel id="descripcion" type="text" label="Descripción" value={tracking.descripcion}  classNameContainer={'w-full'} required />
                             </div>
 
-                            <div className={'flex gap-3 pt-3'}>
-                                <div className="w-[50%] max-w-sm items-center gap-3">
+                            <div className={'grid grid-cols-1 lg:flex gap-3 pt-3'}>
+                                <div className="w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] items-center gap-3">
                                     <Label htmlFor="desde" className="px-2 text-gray-500">
                                         Desde
                                     </Label>
@@ -227,7 +241,7 @@ export default function DetalleTracking({ tracking }: Props) {
                                         readOnly
                                     />
                                 </div>
-                                <div className="w-[50%] max-w-sm items-center gap-3">
+                                <div className="w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] items-center gap-3">
                                     <Label htmlFor="hasta" className="px-2">
                                         Hasta
                                     </Label>
@@ -241,8 +255,8 @@ export default function DetalleTracking({ tracking }: Props) {
                                 </div>
                             </div>
 
-                            <div className={'flex gap-3 pt-3'}>
-                                <div className="w-[50%] max-w-sm items-center gap-3">
+                            <div className={'grid grid-cols-1 lg:flex gap-3 pt-3'}>
+                                <div className="w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] items-center gap-3">
                                     <Label htmlFor="destino" className="px-2 text-gray-500">
                                         Destino
                                     </Label>
@@ -254,7 +268,7 @@ export default function DetalleTracking({ tracking }: Props) {
                                         readOnly
                                     />
                                 </div>
-                                <div className="w-[50%] max-w-sm items-center gap-3">
+                                <div className="w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] items-center gap-3">
                                     <Label htmlFor="diasTransito" className="px-2">
                                         Días tránsito
                                     </Label>
@@ -268,39 +282,39 @@ export default function DetalleTracking({ tracking }: Props) {
                                 </div>
                             </div>
 
-                            <div className={'flex gap-3 pt-3'}>
-                                <div className="w-[50%] max-w-sm items-center gap-3">
+                            <div className={'grid grid-cols-1 lg:flex gap-3 pt-3'}>
+                                <div className="'w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] items-center gap-3">
                                     <Label htmlFor="couriers" className="px-2 text-gray-500">
                                         Courier/s
                                     </Label>
                                     <Input type="text" id="couriers" placeholder="Courier/s" value={tracking.couriers} readOnly />
                                 </div>
 
-                                <InputFloatingLabel id="peso" type="number" value={tracking.peso} label="Peso" classNameContainer={'w-[50%]'} required />
+                                <InputFloatingLabel id="peso" type="number" value={tracking.peso} label="Peso" classNameContainer={'w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%]'} required />
                             </div>
 
-                            <div className={'flex gap-3 pt-3'}>
-                                <div className={'w-[50%] flex flex-col gap-2'}>
+                            <div className={'grid grid-cols-1 lg:flex gap-3 pt-3'}>
+                                <div className={'w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] flex flex-col gap-2'}>
                                     <Label htmlFor="proveedor" className="px-2 text-gray-500" required>
                                         Proveedor
                                     </Label>
                                     <Combobox
                                         items={proveedores}
                                         placeholder="Selec. proveedor..."
-                                        classNames="w-60 p-6"
+                                        classNames=" !min-w-[100%] lg:w-60 p-6"
                                         isActive={true}
                                         idSelect={tracking.idProveedor}
                                     />
                                 </div>
 
-                                <div className={'w-[50%] flex flex-col gap-2'}>
+                                <div className={'w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%] flex flex-col gap-2'}>
                                     <Label htmlFor="cliente" className="px-2 text-gray-500" required>
                                         Cliente
                                     </Label>
                                     <Combobox
-                                        items={proveedores}
+                                        items={clientes}
                                         placeholder="Selec. cliente..."
-                                        classNames="w-60 p-6"
+                                        classNames=" !min-w-[100%] lg:w-60 p-6"
                                         isActive={true}
                                         idSelect={tracking.idCliente}
                                     />
@@ -313,11 +327,11 @@ export default function DetalleTracking({ tracking }: Props) {
                                     Dirección
                                 </Label>
                                 <Combobox
-                                    items={proveedores}
+                                    items={direccionesFront}
                                     placeholder="Selec. dirección..."
                                     classNames="w-60 p-6"
                                     isActive={true}
-                                    idSelect={tracking.idCliente}
+                                    idSelect={tracking.idDireccion}
                                 />
                             </div>
 
@@ -328,8 +342,175 @@ export default function DetalleTracking({ tracking }: Props) {
 
                         </CardContent>
                     </Card>
+
+                    <Card className="flex flex-col w-[100%] max-w-[100%] lg:w-[49.5%] lg:max-w-[49.5%] p-0 mt-4 lg:mt-0 gap-0 lg:max-h-[70vh]">
+                        <CardHeader className={'flex w-[100%] flex-row items-center justify-between p-4 border-b-2 border-gray-100'}>
+                            <p className="text-md font-bold">Historial Tracking</p>
+
+                            <div className={'flex gap-3'}>
+                                <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500 cursor-pointer" onClick={() => AgregarHistorialTracking(setHistorialesBocetos, historialesBocetos)}>
+                                    <Plus  className={'size-5'} />
+                                </Button>
+                                <Button className="bg-orange-400 px-5 text-lg text-white hover:bg-orange-500">
+                                    {trackingFront.historialesTracking.length}
+                                </Button>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent id='card-historialesTracking' className={'flex flex-col justify-between !px-0 pt-0 pb-2 lg:max-h-[70vh] overflow-y-auto'}>
+                            {
+                                trackingFront.historialesTracking.map((historial) => (
+                                 <RowHistorialTracking historial={historial} setTracking={setTracking} />
+                               ))
+                            }
+                            {
+                                historialesBocetos.map((historialB) => (
+                                    <RowHistorialTrackingBoceto historialB={historialB} setTracking={setTracking} />
+                                ))
+                            }
+
+                        </CardContent>
+                    </Card>
                 </div>
             </MainContainer>
         </AppLayout>
     );
+}
+
+function RowHistorialTracking({historial, setTracking}: {historial: HistorialTracking, setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>}){
+
+    function SwitchOcultarHistorial(){
+        setTracking( (prev) => ({
+            ...prev,
+            historialesTracking: prev.historialesTracking.map( (historialPrev) =>
+              historialPrev.id === historial.id ?
+                  {
+                      ...historialPrev,
+                      ocultado: !historialPrev.ocultado,
+                      actions: historialPrev.actions.map( (actionPrev) =>
+                      actionPrev.actionType === 'SwitchOcultar' ?
+                          {
+                              ...actionPrev,
+                              descripcion: actionPrev.descripcion == 'Ocultar' ? 'Mostrar' : 'Ocultar',
+                              icon: actionPrev.icon == 'EyeOff' ? 'Eye' : 'EyeOff'
+                          }:
+                          actionPrev
+                      )
+                  } :
+                  historialPrev
+            ),
+        }))
+    }
+
+    return (
+        <div   className={`flex items-center gap-3 px-5 py-3 border-b ${
+            historial.ocultado ? 'bg-orange-50' : ''
+        }`}>
+            <Button className={historial.tipo == 1 ? 'bg-green-300 px-[5px] text-md text-white' : historial.tipo == 2 ? 'bg-red-400 px-[5px] text-md text-white' : historial.tipo == 3 ? 'bg-blue-400 px-[5px] text-md text-white' : 'bg-black px-[5px] text-md text-white'}>
+                {historial.tipo == 1 ? 'PA' : historial.tipo == 2 ? 'MB' : historial.tipo == 3 ? 'AP' : 'OT'}
+            </Button>
+
+            <div className={'flex flex-col min-w-[68%] max-w-[68%]'}>
+                <span className={'text-[13px] pb-2 text-justify'}>{historial.descripcion}</span>
+                <span className={'text-[12px] text-gray-500'}>{historial.paisEstado}</span>
+            </div>
+
+            <div className={'flex flex-col min-w-[17%]'}>
+                <div className={'flex items-center gap-1 text-[13px] pb-3'}> <Calendar className={' size-5 text-orange-400'}/> {historial.fecha}</div>
+                <div className={'flex items-center gap-1 text-[13px]'}> <Clock4  className={'size-5 text-orange-400'}/> {historial.hora}</div>
+            </div>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="size-10">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    {historial.actions.map((action) => {
+                        const LucideIcon: LucideIcon = iconMap[action.icon ?? "UserPlus"]
+                        return (
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    if (action.actionType === 'Editar') {
+                                        alert('Editar');
+                                    } else if (action.actionType === 'VerOriginal') {
+                                        alert('ver original');
+                                    } else if (action.actionType === 'SwitchOcultar') {
+                                        SwitchOcultarHistorial()
+                                    } else {
+                                        console.log('Error la acción no coincide');
+                                    }
+                                }}
+                            >
+                                <div className="flex flex-nowrap items-center gap-2">
+                                    <LucideIcon/> <span>{action.descripcion} </span>
+                                </div>
+                            </DropdownMenuItem>
+                        )
+                    })
+                    }
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+
+        </div>
+    );
+}
+
+function RowHistorialTrackingBoceto({historialB, setTracking}: {historialB: HistorialTracking, setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>}){
+
+
+    return (
+        <div   className={`flex items-center gap-3 px-5 py-3 border-b`}>
+            <Button className='bg-red-400 px-[5px] text-md text-white'>
+                MB
+            </Button>
+
+            <div className={'flex flex-col min-w-[68%] max-w-[68%]'}>
+                <Label htmlFor={'historialT-' + historialB.id}>Descripción</Label>
+                <Input type={'text'} name={'historialT-' + historialB.id} className={''}></Input>
+            </div>
+
+            <div className={'flex flex-col min-w-[17%]'}>
+                <div className={'flex items-center gap-1 text-[13px] pb-3'}> <Calendar className={' size-5 text-orange-400'}/> {historialB.fecha}</div>
+                <div className={'flex items-center gap-1 text-[13px]'}> <Clock4  className={'size-5 text-orange-400'}/> {historialB.hora}</div>
+            </div>
+
+            <Button className={'bg-orange-400'} >
+                <Plus />
+            </Button>
+
+
+
+        </div>
+    );
+}
+
+function AgregarHistorialTracking(setHistorialesBocetos: React.Dispatch<React.SetStateAction<HistorialTracking[]>>, historialesBocetos: HistorialTracking[]){
+    // Agregar un historialTrackingBoceto al array
+
+    let idUnico: number = -1;
+
+    historialesBocetos.map( (historial) => {
+
+        if (historial.id === idUnico) {
+            idUnico--;
+        }
+    })
+
+    const historialBoceto: HistorialTracking = {
+        id: idUnico,
+        descripcion: '',
+        descripcionModificada: '',
+        codigoPostal: '40801',
+        paisEstado: 'San Joaquín de Flores, Heredia',
+        ocultado: false,
+        tipo: 
+    }
+
+
+
 }

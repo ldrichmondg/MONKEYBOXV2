@@ -24,7 +24,6 @@ class TrackingHistorial extends Model
         'OCULTADO',
         'TIPO',
         'IDTRACKING',
-        'FECHA',
         'IDCOURIER',
         'COSTARICA',
         'CLIENTE',

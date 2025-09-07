@@ -22,6 +22,11 @@ class ModelToIdDescripcionDTO
                 $descripcion = $item->NOMBRE.' '.$item->APELLIDOS;
             }
 
+            // Caso de que se use direccion
+            if (isset($item->DIRECCION) ) {
+                $descripcion = $item->direccionCompleta();
+            }
+
             return [
                 'id' => $item->id,
                 'descripcion' => $descripcion,
