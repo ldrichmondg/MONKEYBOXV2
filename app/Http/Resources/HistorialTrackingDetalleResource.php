@@ -15,6 +15,7 @@ class HistorialTrackingDetalleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+
         return [
             'id' => $this->id,
             'descripcion' => $this->DESCRIPCION,
@@ -36,7 +37,7 @@ class HistorialTrackingDetalleResource extends JsonResource
                     'route' => ''
                 ],
                 [
-                    'descripcion' => 'Ver Original',
+                    'descripcion' => !empty($this->DESCRIPCIONMODIFICADA) ? 'Ver Original' : '',
                     'icon' => 'ArrowLeftRight',
                     'actionType' => 'VerOriginal',
                     'isActive' => !empty($this->DESCRIPCIONMODIFICADA),

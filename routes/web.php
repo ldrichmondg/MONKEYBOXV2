@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DireccionController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,6 +22,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // RUTAS TRACKING
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tracking/registro/vista', [TrackingController::class, 'RegistroMasivoVista'])->name('tracking.registroMasivo.vista');
+});
+
+// RUTAS DIRECCION
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/direccion/consulta/json', [DireccionController::class, 'ConsultaJSON'])->name('direccion.consulta.json');
 });
 
 require __DIR__.'/settings.php';

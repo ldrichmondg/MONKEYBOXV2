@@ -12,5 +12,5 @@ export interface HistorialTracking extends WithActions {
     hora: string;
     idTracking: number;
     perteneceEstado: string | null;
-    historial?: HistorialTracking;
+    fechaCompleta?: Date;
 }
