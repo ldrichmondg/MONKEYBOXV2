@@ -4,6 +4,11 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Log;
+use App\Models\TrackingHistorial;
+use App\Models\Enum\TipoHistorialTracking;
+use App\Models\Tracking;
+use DateTime;
+use Illuminate\Support\Carbon;
 
 class ServicioParcelsApp
 {
@@ -98,7 +103,7 @@ class ServicioParcelsApp
             if ($respuesta->successful()) {
                 // Convertir la respuesta a array
                 $datosRespuesta = $respuesta->json();
-
+                
                 if ($datosRespuesta['done']) {
                     return ['estado' => 'Seguimiento completo', 'datos' => $datosRespuesta];
                 } else {
@@ -160,5 +165,90 @@ class ServicioParcelsApp
         }
 
         return [$lugarSinCodigoPostal, $postalCode];
+    }
+     public static function ProcesarTrackingsParcelsApp(array $idsTracking): void
+    {
+          foreach (array_chunk($idsTracking, 50) as $chunk) {
+            foreach ($chunk as $idTracking) {
+                $respuestaObjeto = ServicioParcelsApp::ObtenerTracking($idTracking);
+                if (! $respuestaObjeto) {
+                    Log::warning('No se encontro', ['id' => $idTracking]);
+                }
+                $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
+                ServicioParcelsApp::GuardarHistorialesRecientes($respuestaObjeto,$tracking);
+          
+            }
+        }
+      
+    }
+    public static function GuardarHistorialesRecientes($dataParcelsApp, Tracking $tracking): void
+    {
+
+        // 1. Obtener la data parseada de ParcelsApp
+        // 2. Convertirla en los arrayCouriers y shipments que necesitamos
+        // 3. Crear los historiales Tracking
+
+        try {
+
+            $shipment = $dataParcelsApp['shipments'][0];
+            $arrayCarries = $shipment['carriers'];
+
+             // última fecha registrada para este tracking
+            $ultima   = $tracking->fechaUltimoHistorial();
+            $ultimaAt = $ultima ? Carbon::parse($ultima) : $tracking->created_at->copy()->startOfDay();
+            $historiales = [];
+            if (! empty($shipment['states'])) {
+                foreach ($shipment['states'] as $state) {
+                    $fechaStr = (new DateTime($state['date']))->format('Y-m-d H:i:s');
+                    $fechaAt = self::parseFecha($fechaStr);
+                    log::info("Fechas", ['fechaStr' => $fechaStr, 'fechaAt' => $fechaAt, 'ultimaAt' => $ultimaAt, 'ultima' => $fechaAt->gt($ultimaAt)]);
+                    if ($fechaAt && (!$ultimaAt || $fechaAt->gt($ultimaAt))) {
+
+                        $courierCodigoJson = $state['carrier'];
+                        $lugar = ServicioParcelsApp::SeparaLugar(! empty($state['location']) ? $state['location'] : '');
+
+                        $historial = new TrackingHistorial;
+                        $historial->DESCRIPCION = $state['status'];
+                        $historial->DESCRIPCIONMODIFICADA = '';
+                        $historial->PAISESTADO = $lugar[0];
+                        $historial->CODIGOPOSTAL = $lugar[1];
+                        $historial->OCULTADO = false;
+                        $historial->TIPO = TipoHistorialTracking::API->value;
+                        $historial->created_at = (new DateTime($state['date']))->format('Y-m-d H:i:s');
+                        $historial->updated_at = (new DateTime($state['date']))->format('Y-m-d H:i:s');
+                        $historial->IDCOURIER = $tracking->courrierNombreAId($arrayCarries[$courierCodigoJson]);
+                        $historial->IDTRACKING = $tracking->id;
+
+                        $historiales[] = $historial;
+                    }
+                }
+            }
+
+            Log::info("Historiales nuevos", ['historiales' => $historiales]);
+            foreach ($historiales as $historial) {
+                Log::info("message", ['historial' => $historial]);
+                $historial->save();
+            }
+
+
+        } catch (Exception $e) {
+
+            Log::error('[ServicioTracking->ConstruirHistoriales] error: '.$e);
+        }
+    }
+
+      /**
+     * Parsea una fecha de la API a Carbon, devolviendo null si falla.
+     *
+     * @param string $fecha
+     * @return Carbon|null
+     */
+    private static function parseFecha(string $fecha): ?Carbon
+    {
+        try {
+            return Carbon::parse($fecha);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

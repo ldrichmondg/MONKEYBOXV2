@@ -68,7 +68,7 @@ class ServicioTracking
             $arrayCarries = $shipment['carriers'];
 
             $tracking = new Tracking;
-            $tracking->IDAPI = 0; // por si ponemos despues el UUID
+            $tracking->IDAPI = $datosRespuesta['uuid'] ?? 0; // por si ponemos despues el UUID
             $tracking->IDTRACKING = $shipment['trackingId'];
             $tracking->DESCRIPCION = null;
             $tracking->DESDE = ServicioTracking::RetornaValorAtributo($attributes, 'from') ?? '';
@@ -182,4 +182,5 @@ class ServicioTracking
             return null;
         }
     }
+   
 }
