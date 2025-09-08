@@ -66,10 +66,17 @@ export function Combobox( {items = [], placeholder, classNames = '', onChange, i
                                         key={item.id}
                                         value={item.descripcion}
                                         onSelect={(currentValue) => {
-                                            setValue(currentValue === value ? "" : currentValue)
+                                            const valorActualizado = currentValue === value ? "" : currentValue
+                                            setValue(valorActualizado)
                                             setOpen(false)
+                                            if(valorActualizado === item.descripcion) {
+                                                if (onChange) onChange(item.id);
 
-                                            if(onChange) onChange(item.id); // ⬅️ aquí se usa la prop `onChange`
+                                            }else { //si desactivo el check significa que no selecciona nada
+                                                if (onChange) onChange(-1);
+                                            }
+
+
                                         }}
                                     >
                                         {item.descripcion}
