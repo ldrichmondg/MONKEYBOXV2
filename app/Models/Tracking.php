@@ -129,4 +129,11 @@ class Tracking extends Model
         return $this->hasOne(TrackingProveedor::class, 'IDTRACKING', 'id');
     }
 
+    public function fechaUltimoHistorial()
+    {
+        $ultimoHistorial = $this->historialesT
+            ->sortByDesc('created_at')
+            ->first();
+        return $ultimoHistorial ? $ultimoHistorial->created_at : null;
+    }
 }

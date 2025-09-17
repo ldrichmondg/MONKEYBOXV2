@@ -45,6 +45,7 @@ class Diccionarios
             new defaultObject('EMS', 19),
             new defaultObject('GoFo Express', 20),
             new defaultObject('', 21), // Definir con luis
+            new defaultObject('Aeropost', 22),
 
         ];
         self::$provincias = [
