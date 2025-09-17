@@ -5,7 +5,7 @@ export interface HistorialTracking extends WithActions {
     descripcion: string;
     descripcionModificada: string;
     codigoPostal: number;
-    paisEstado: number;
+    paisEstado: string;
     ocultado: boolean;
     tipo: number;
     fecha: string;

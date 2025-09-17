@@ -13,9 +13,10 @@ export default function Cubes({
                                   name,
                                   className = "",
                                   hijoClassName,
+                                  ...props // <- Capturamos todos los demás props
                               }: Props) {
     return (
-        <div className={`flex items-center justify-center rounded-lg text-sidebar-primary-foreground ${className}`}>
+        <div className={`flex items-center justify-center rounded-lg text-sidebar-primary-foreground ${className}`} {...props}>
             {icon && (
                 <Icon className={`dark:text-black ${hijoClassName}`} />
 

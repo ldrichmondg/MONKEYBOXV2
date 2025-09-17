@@ -44,7 +44,6 @@ export async function EliminarModal({ description = '', titulo = '', route = '' 
         console.log('[EM] error: ' + error);
     }
 
-
 }
 
 

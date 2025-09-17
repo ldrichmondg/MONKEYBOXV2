@@ -20,7 +20,6 @@ class TrackingDetalleResource extends JsonResource
             'id' => $this->id,
             'idTracking' => $this->IDTRACKING,
             'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
-            'descripcion' => empty($this->DESCRIPCION) ? '' : $this->DESCRIPCION,
             'desde' => empty($this->DESDE) ? 'N/A' : $this->DESDE,
             'hasta' => empty($this->HASTA) ? 'N/A' : $this->HASTA,
             'destino' => empty($this->DESTINO) ? 'N/A' : $this->DESTINO,
@@ -38,6 +37,8 @@ class TrackingDetalleResource extends JsonResource
             'ordenEstatusSincronizado' => $this->estadoSincronizado->ORDEN,
             'historialesTracking' => HistorialTrackingDetalleResource::collection($this->whenLoaded('historialesT'))->resolve(),
             'trackingProveedor' => optional($this->trackingProveedor)->TRACKINGPROVEEDOR,
+            'valorPrealerta' => optional(optional($this->trackingProveedor)->prealerta)->VALOR !== null ? $this->trackingProveedor->prealerta->VALOR : 1.5,
+            'descripcion' => optional(optional($this->trackingProveedor)->prealerta)->DESCRIPCION !== null ? $this->trackingProveedor->prealerta->DESCRIPCION : '',
             ];
     }
 }

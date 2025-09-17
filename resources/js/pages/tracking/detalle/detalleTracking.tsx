@@ -6,23 +6,59 @@ import InputFloatingLabel from '@/ownComponents/inputFloatingLabels';
 import { WhatsappIcon } from '@/ownComponents/svgs/whatsApp';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/ownComponents/combobox';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
-import { TrackingCompleto } from '@/types/tracking';
+import { TrackingCompleto, TrackingConPrealertaBase, TrackingConPrealertaBaseProveedor } from '@/types/tracking';
 import { Head } from '@inertiajs/react';
-import { Box, Calendar, CircleCheck, CircleX, Clock4, LucideIcon, MoreHorizontal, MoveRight, Plus, RotateCcw, Trash } from 'lucide-react';
+import {
+    Box,
+    Calendar,
+    CircleCheck,
+    CircleX,
+    Clock4,
+    LucideIcon,
+    MoreHorizontal,
+    MoveRight,
+    Plus,
+    RotateCcw,
+    Trash
+} from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 //api calls
 import { iconMap } from '@/lib/iconMap';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
+import { comboboxDirecciones } from '@/servicesFront/direccion/servicioFrontDireccion';
 import { cargarProveedores } from '@/servicesFront/proveedor/servicioFrontProveedores';
 import { HistorialTracking } from '@/types/historialTracking';
-import { comboboxDirecciones } from '@/servicesFront/direccion/servicioFrontDireccion';
+
+//importar archivo auxiliar
+import {
+    EstadoActualAccionPrealertar,
+    EstadoAnteriorAccionPrealertar,
+    EstadoSiguienteAccionPrealertar
+} from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
 
 interface Props {
     tracking: TrackingCompleto;
@@ -30,15 +66,20 @@ interface Props {
     direcciones: ComboBoxItem[];
 }
 
+interface MensajeDialog {
+    descripcion: string;
+    titulo: string;
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Consulta Trackings',
-        href: route('tracking.consulta.vista'),
+        href: route('tracking.consulta.vista')
     },
     {
         title: 'Detalle',
-        href: route('tracking.registroMasivo.vista'),
-    },
+        href: route('tracking.registroMasivo.vista')
+    }
 ];
 
 const buttons: ButtonHeader[] = [
@@ -47,35 +88,39 @@ const buttons: ButtonHeader[] = [
         name: 'Sincronizar Cambios',
         className: 'bg-orange-400 text-white hover:bg-orange-500 ',
         isActive: true,
-        onClick: null,
-        icon: RotateCcw,
+        onClick: () => {
+        },
+        icon: RotateCcw
     },
     {
         id: 'contactarCliente',
         name: 'Contactar Cliente',
         className: 'bg-green-400 text-white hover:bg-green-300 ',
         isActive: true,
-        onClick: null,
-        icon: WhatsappIcon,
+        onClick: () => {
+        },
+        icon: WhatsappIcon
     },
     {
         id: 'guardarCambios',
         name: 'Guardar cambios',
         className: 'bg-red-400 text-white hover:bg-red-300 ',
         isActive: true,
-        onClick: null,
-    },
+        onClick: () => {
+        }
+    }
 ];
 
 export default function DetalleTracking({ tracking, clientes, direcciones }: Props) {
-    const [ordenEstado, setOrdenEstado] = useState<number>();
     const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
     const [direccionesFront, setDireccionesFront] = useState<ComboBoxItem[]>(direcciones);
-    const [trackingFront, setTracking] = useState<TrackingCompleto>(tracking);
+    const [trackingFront, setTracking] = useState<TrackingCompleto>({ ...tracking, errores: [] });
     const [historialesBocetos, setHistorialesBocetos] = useState<HistorialTracking[]>([]);
+    const [mensajeDialog, setMensajeDialog] = useState<MensajeDialog>(null);
 
     //variables de consulta:
     const [cargandoDirecciones, setCargandoDirecciones] = useState<boolean>(false);
+    const [mostrarDialog, setMostrarDialog] = useState<boolean>(false);
 
     useEffect(() => {
         cargarProveedores(setProveedores);
@@ -86,12 +131,12 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
     }, [trackingFront]);
 
     useEffect(() => {
-        console.log(historialesBocetos);
+        //console.log(historialesBocetos);
     }, [historialesBocetos]);
 
     useEffect(() => {
-        console.log(direccionesFront);
-    }, [direccionesFront]);
+        //console.log(mostrarDialog);
+    }, [mostrarDialog]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
@@ -101,17 +146,19 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                     <Card className="flex w-[25%] max-w-[55%] flex-col px-[0.9rem] py-3 xl:w-[55%] xl:max-w-[25%]">
                         <CardHeader className={'w-[100%] p-0'}>
                             <div className={'flex justify-between'}>
-                                <div className="flex size-9 items-center justify-center rounded-sm bg-red-400 px-2 text-sidebar-primary-foreground">
+                                <div
+                                    className="flex size-9 items-center justify-center rounded-sm bg-red-400 px-2 text-sidebar-primary-foreground">
                                     <Box className="size-7 dark:text-black" />
                                 </div>
 
-                                <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"> Hijos: 1 de 1</Button>
+                                <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"> Hijos: 1
+                                    de 1</Button>
                             </div>
                         </CardHeader>
 
                         <CardContent className={'flex flex-col p-0'}>
                             <p className="font-bold text-gray-500"> {trackingFront.idTracking}</p>
-                            {trackingFront.nombreProveedor == 'MiLocker' ? (
+                            {trackingFront.idProveedor == 2 ? (
                                 <Input
                                     id="trackingProveedor"
                                     className="text-bold"
@@ -127,102 +174,105 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                     <Card className="flex w-[75%] max-w-[75%] flex-col px-[1rem] py-3">
                         <CardHeader className={'w-[100%] p-0'}>
                             <p className="text-gray-500">Estado Actual</p>
-                            <p className="text-xl font-bold">{tracking.estatus}</p>
+                            <p className="text-xl font-bold">{trackingFront.estatus}</p>
                         </CardHeader>
 
                         <CardContent className={'flex flex-row justify-between p-0'}>
                             <div className="flex max-w-[90%] flex-row items-center gap-3 p-0">
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 0
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                        ${trackingFront.ordenEstatus > 0 ? 'bg-orange-400' : 'bg-gray-400'}
+                                        ${trackingFront.ordenEstatus - 1 == 1 ? 'cursor-pointer' : ''} `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="SPR"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 1
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                    ${trackingFront.ordenEstatus > 1 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PDO"
+                                    onClick={() => AccionPreartar(setTracking, trackingFront, 2, setMostrarDialog, setMensajeDialog)}
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 2
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                    ${trackingFront.ordenEstatus > 2 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3 ? 'cursor-pointer' : ''} `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="RMI"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 3 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 3 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 3
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                    ${trackingFront.ordenEstatus > 3 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4 ? 'cursor-pointer' : ''} `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="TCR"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 4 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 4 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 4
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                        ${trackingFront.ordenEstatus > 4 ? 'bg-orange-400' : 'bg-gray-400'}
+                                        ${trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5 ? 'cursor-pointer' : ''}
+                                    `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PA"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 5 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 5 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 5
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 5 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6 ? 'cursor-pointer' : ''}
+                                    `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="OMB"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 6 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 6 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 6
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 6 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7 ? 'cursor-pointer' : ''}
+                                    `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="EN"
                                 />
-                                <MoveRight className={tracking.ordenEstatus > 7 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight
+                                    className={trackingFront.ordenEstatus > 7 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={
-                                        tracking.ordenEstatus > 7
-                                            ? 'bg-orange-400 px-7 lg:size-10 xl:size-12'
-                                            : 'bg-gray-400 px-7 lg:size-10 xl:size-12'
-                                    }
+                                    className={`px-7 lg:size-10 xl:size-12
+                                    ${trackingFront.ordenEstatus > 7 ? 'bg-orange-400' : 'bg-gray-400'}
+                                    ${trackingFront.ordenEstatus + 1 == 8 || trackingFront.ordenEstatus - 1 == 8 ? 'cursor-pointer' : ''} `}
+
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="FDO"
                                 />
                             </div>
 
                             <div className="max-w-[10%]">
-                                <Cubes className="size-12 bg-gray-400 px-7" hijoClassName="font-bold text-lg" name="OTR" />
+                                <Cubes className="size-12 bg-gray-400 px-7" hijoClassName="font-bold text-lg"
+                                       name="OTR" />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 <div className="grid grid-cols-1 justify-between py-3 lg:flex lg:flex-row">
-                    <Card className="flex h-auto w-[100%] max-w-[100%] flex-col p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
-                        <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
+                    <Card
+                        className="flex h-auto w-[100%] max-w-[100%] flex-col p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
+                        <CardHeader
+                            className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Encabezado Tracking</p>
                             <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500">
                                 Tracking Siguiente: <CircleX className={'size-5'} />{' '}
@@ -230,14 +280,34 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                         </CardHeader>
 
                         <CardContent className={'flex flex-col justify-between px-3 pt-0 pb-2'}>
-                            <div className="relative w-[100%] pb-2">
+                            <div className="flex w-[100%] gap-2 pb-2">
                                 <InputFloatingLabel
                                     id="descripcion"
                                     type="text"
                                     label="Descripción"
-                                    value={tracking.descripcion}
-                                    classNameContainer={'w-full'}
+                                    value={trackingFront.descripcion}
+                                    classNameContainer={'w-[80%]'}
                                     required
+                                    onChange={(e) => {
+                                        setTracking((prev) => ({ ...prev, descripcion: e.target.value }));
+                                    }}
+                                    error={trackingFront.errores.find((error) => error.name == 'descripcion')}
+                                />
+
+                                <InputFloatingLabel
+                                    id="valorPrealerta"
+                                    type="number"
+                                    label="Valor"
+                                    value={trackingFront.valorPrealerta}
+                                    classNameContainer={'w-[20%]'}
+                                    required
+                                    onChange={(e) => {
+                                        setTracking((prev) => ({
+                                            ...prev,
+                                            valorPrealerta: parseFloat(e.target.value)
+                                        }));
+                                    }}
+                                    error={trackingFront.errores.find((error) => error.name == 'valorPrealerta')}
                                 />
                             </div>
 
@@ -300,7 +370,8 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     <Label htmlFor="couriers" className="px-2 text-gray-500">
                                         Courier/s
                                     </Label>
-                                    <Input type="text" id="couriers" placeholder="Courier/s" value={tracking.couriers} readOnly />
+                                    <Input type="text" id="couriers" placeholder="Courier/s" value={tracking.couriers}
+                                           readOnly />
                                 </div>
 
                                 <InputFloatingLabel
@@ -309,7 +380,8 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     value={tracking.peso}
                                     label="Peso"
                                     classNameContainer={'w-[100%] max-w-[100%] lg:w-[50%] lg:max-w-[50%]'}
-                                    required
+                                    readOnly
+                                    error={trackingFront.errores.find((error) => error.name == 'peso')}
                                 />
                             </div>
 
@@ -323,7 +395,11 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                         placeholder="Selec. proveedor..."
                                         classNames=" !min-w-[100%] lg:w-60 p-6"
                                         isActive={true}
-                                        idSelect={tracking.idProveedor}
+                                        idSelect={trackingFront.idProveedor}
+                                        onChange={(idSeleccionado) =>
+                                            CambiarProveedor(idSeleccionado, setTracking, trackingFront, tracking, setMensajeDialog, setMostrarDialog)
+                                        }
+                                        error={trackingFront.errores.find((error) => error.name == 'idProveedor')}
                                     />
                                 </div>
 
@@ -336,10 +412,11 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                         placeholder="Selec. cliente..."
                                         classNames=" !min-w-[100%] lg:w-60 p-6"
                                         isActive={true}
-                                        idSelect={tracking.idCliente}
+                                        idSelect={trackingFront.idCliente}
                                         onChange={(idSeleccionado) =>
                                             ActualizarClienteYDireccion(idSeleccionado, setDireccionesFront, setCargandoDirecciones, setTracking)
                                         }
+                                        error={trackingFront.errores.find((error) => error.name == 'idCliente')}
                                     />
                                 </div>
                             </div>
@@ -354,6 +431,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     classNames="w-60 p-6"
                                     isActive={!cargandoDirecciones}
                                     idSelect={trackingFront.idDireccion}
+                                    error={trackingFront.errores.find((error) => error.name == 'idDireccion')}
                                 />
                             </div>
 
@@ -361,16 +439,19 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                 <InputFloatingLabel
                                     id="observaciones"
                                     type="text"
-                                    value={tracking.observaciones}
+                                    value={trackingFront.observaciones}
                                     label="Observaciones"
                                     classNameContainer={'w-full'}
+                                    error={trackingFront.errores.find((error) => error.name == 'observaciones')}
                                 />
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="mt-4 flex w-[100%] max-w-[100%] flex-col gap-0 p-0 lg:mt-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
-                        <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
+                    <Card
+                        className="mt-4 flex w-[100%] max-w-[100%] flex-col gap-0 p-0 lg:mt-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
+                        <CardHeader
+                            className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Historial Tracking</p>
 
                             <div className={'flex gap-3'}>
@@ -404,22 +485,50 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Notificacion Dialog */}
+
+                {mostrarDialog && (
+                    <Dialog open={mostrarDialog} onOpenChange={(open) => setMostrarDialog(open)}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{mensajeDialog.titulo}</DialogTitle>
+                                <DialogDescription>
+                                    {mensajeDialog.descripcion}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="sm:justify-start">
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary"
+                                            className={'bg-black text-white hover:bg-gray-500'}
+                                            onClick={() => setMostrarDialog(false)}>
+                                        Entendido
+                                    </Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+
+                {/* TOASTER PARA MENSAJES */}
+                <Toaster position="top-center" />
+
             </MainContainer>
         </AppLayout>
     );
 }
 
 function RowHistorialTracking({
-    historial,
-    setTracking,
-}: {
+                                  historial,
+                                  setTracking
+                              }: {
     historial: HistorialTracking;
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>;
 }) {
     const [verModificada, setVerModificada] = useState<boolean>(historial.descripcionModificada != '');
     const [editar, setEditar] = useState<boolean>(false);
     const [descripcionActualizando, setDescripcionActualizando] = useState<string>(
-        historial.descripcionModificada != '' ? historial.descripcionModificada : historial.descripcion,
+        historial.descripcionModificada != '' ? historial.descripcionModificada : historial.descripcion
     );
 
     useEffect(() => {
@@ -432,20 +541,20 @@ function RowHistorialTracking({
             historialesTracking: prev.historialesTracking.map((historialPrev) =>
                 historialPrev.id === historial.id
                     ? {
-                          ...historialPrev,
-                          ocultado: !historialPrev.ocultado,
-                          actions: historialPrev.actions.map((actionPrev) =>
-                              actionPrev.actionType === 'SwitchOcultar'
-                                  ? {
-                                        ...actionPrev,
-                                        descripcion: actionPrev.descripcion == 'Ocultar' ? 'Mostrar' : 'Ocultar',
-                                        icon: actionPrev.icon == 'EyeOff' ? 'Eye' : 'EyeOff',
-                                    }
-                                  : actionPrev,
-                          ),
-                      }
-                    : historialPrev,
-            ),
+                        ...historialPrev,
+                        ocultado: !historialPrev.ocultado,
+                        actions: historialPrev.actions.map((actionPrev) =>
+                            actionPrev.actionType === 'SwitchOcultar'
+                                ? {
+                                    ...actionPrev,
+                                    descripcion: actionPrev.descripcion == 'Ocultar' ? 'Mostrar' : 'Ocultar',
+                                    icon: actionPrev.icon == 'EyeOff' ? 'Eye' : 'EyeOff'
+                                }
+                                : actionPrev
+                        )
+                    }
+                    : historialPrev
+            )
         }));
     }
 
@@ -457,25 +566,25 @@ function RowHistorialTracking({
                 historialesTracking: prev.historialesTracking.map((historialPrev) =>
                     historialPrev.id === historial.id
                         ? {
-                              ...historialPrev,
-                              actions: historialPrev.actions.map((actionPrev) =>
-                                  actionPrev.actionType === 'VerOriginal'
-                                      ? {
-                                            ...actionPrev,
-                                            descripcion: nuevoVerModificada ? 'Ver Original' : 'Ver Propia',
-                                        }
-                                      : actionPrev,
-                              ),
-                          }
-                        : historialPrev,
-                ),
+                            ...historialPrev,
+                            actions: historialPrev.actions.map((actionPrev) =>
+                                actionPrev.actionType === 'VerOriginal'
+                                    ? {
+                                        ...actionPrev,
+                                        descripcion: nuevoVerModificada ? 'Ver Original' : 'Ver Propia'
+                                    }
+                                    : actionPrev
+                            )
+                        }
+                        : historialPrev
+                )
             }));
             return nuevoVerModificada; // devolvemos el valor correcto
         });
     }
 
     //Funciones para editar
-    function ActualizarDescripcionHistorial(valorInput) {
+    function ActualizarDescripcionHistorial(valorInput: string) {
         setDescripcionActualizando(valorInput);
     }
 
@@ -497,20 +606,20 @@ function RowHistorialTracking({
             historialesTracking: prevTracking.historialesTracking.map((historialPrev) =>
                 historialPrev.id == historial.id
                     ? {
-                          ...historialPrev,
-                          descripcionModificada: descripcionActualizando,
-                          actions: historialPrev.actions.map((actionPrev) =>
-                              actionPrev.actionType === 'VerOriginal'
-                                  ? {
-                                        ...actionPrev,
-                                        descripcion: 'Ver Original',
-                                        isActive: true,
-                                    }
-                                  : actionPrev,
-                          ),
-                      }
-                    : historialPrev,
-            ),
+                        ...historialPrev,
+                        descripcionModificada: descripcionActualizando,
+                        actions: historialPrev.actions.map((actionPrev) =>
+                            actionPrev.actionType === 'VerOriginal'
+                                ? {
+                                    ...actionPrev,
+                                    descripcion: 'Ver Original',
+                                    isActive: true
+                                }
+                                : actionPrev
+                        )
+                    }
+                    : historialPrev
+            )
         }));
 
         // 3. verModificada = true
@@ -535,10 +644,10 @@ function RowHistorialTracking({
                     historial.tipo == 1
                         ? 'text-md bg-green-300 px-[5px] text-white'
                         : historial.tipo == 2
-                          ? 'text-md bg-red-400 px-[5px] text-white'
-                          : historial.tipo == 3
-                            ? 'text-md bg-blue-400 px-[5px] text-white'
-                            : 'text-md bg-black px-[5px] text-white'
+                            ? 'text-md bg-red-400 px-[5px] text-white'
+                            : historial.tipo == 3
+                                ? 'text-md bg-blue-400 px-[5px] text-white'
+                                : 'text-md bg-black px-[5px] text-white'
                 }
             >
                 {historial.tipo == 1 ? 'PA' : historial.tipo == 2 ? 'MB' : historial.tipo == 3 ? 'AP' : 'OT'}
@@ -639,11 +748,11 @@ function RowHistorialTracking({
 }
 
 function RowHistorialTrackingBoceto({
-    historialB,
-    setHistorialesBocetos,
-    setTracking,
-    historialesTracking,
-}: {
+                                        historialB,
+                                        setHistorialesBocetos,
+                                        setTracking,
+                                        historialesTracking
+                                    }: {
     historialB: HistorialTracking;
     setHistorialesBocetos: React.Dispatch<React.SetStateAction<HistorialTracking[]>>;
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>;
@@ -656,16 +765,16 @@ function RowHistorialTrackingBoceto({
         inputRef.current?.focus();
     }, []);
 
-    function ActualizarDescripcionHistorialBoceto(nuevaDescripcion: number) {
+    function ActualizarDescripcionHistorialBoceto(nuevaDescripcion: string) {
         setHistorialesBocetos((prevHistoriales) =>
             prevHistoriales.map((historial) =>
                 historial.id == historialB.id
                     ? {
-                          ...historial,
-                          descripcion: nuevaDescripcion,
-                      }
-                    : historial,
-            ),
+                        ...historial,
+                        descripcion: nuevaDescripcion
+                    }
+                    : historial
+            )
         );
     }
 
@@ -689,14 +798,13 @@ function RowHistorialTrackingBoceto({
             if (historial.id == idUnico) idUnico--;
         }
 
-        console.log(idUnico);
         historialB.id = idUnico;
 
         // 2.1. Agregar el historial al arreglo de tracking
 
         setTracking((prevTracking) => ({
             ...prevTracking,
-            historialesTracking: [...prevTracking.historialesTracking, historialB],
+            historialesTracking: [...prevTracking.historialesTracking, historialB]
         }));
 
         // 3. Eliminar el historial del arreglo de bocetos
@@ -764,7 +872,7 @@ function RowHistorialTrackingBoceto({
 function AgregarHistorialTracking(
     setHistorialesBocetos: React.Dispatch<React.SetStateAction<HistorialTracking[]>>,
     historialesBocetos: HistorialTracking[],
-    id: number,
+    id: number
 ) {
     // Agregar un historialTrackingBoceto al array
 
@@ -782,14 +890,16 @@ function AgregarHistorialTracking(
     const opcionesFecha = { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Costa_Rica' };
     const opcionesHora = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Costa_Rica' };
 
+    // @ts-expect-error
     const fechaCostaRica = new Intl.DateTimeFormat('es-CR', opcionesFecha).format(hoyTimestamp);
+    // @ts-expect-error
     const horaCostaRica = new Intl.DateTimeFormat('es-CR', opcionesHora).format(hoyTimestamp);
 
     const historialBoceto: HistorialTracking = {
         id: idUnico,
         descripcion: '',
         descripcionModificada: '',
-        codigoPostal: '40801',
+        codigoPostal: 40801,
         paisEstado: 'San Joaquín de Flores, Heredia',
         ocultado: false,
         tipo: 2,
@@ -804,23 +914,23 @@ function AgregarHistorialTracking(
                 icon: 'Edit',
                 actionType: 'Editar',
                 isActive: true,
-                route: '',
+                route: ''
             },
             {
                 descripcion: 'Ver Original',
                 icon: 'ArrowLeftRight',
                 actionType: 'VerOriginal',
                 isActive: false,
-                route: '',
+                route: ''
             },
             {
                 descripcion: 'Ocultar',
                 icon: 'EyeOff',
                 actionType: 'SwitchOcultar',
                 isActive: true,
-                route: '',
-            },
-        ],
+                route: ''
+            }
+        ]
     };
 
     setHistorialesBocetos((prevHistoriales) => [...prevHistoriales, historialBoceto]);
@@ -832,7 +942,7 @@ async function ActualizarClienteYDireccion(
     idCliente: number,
     setDirecciones: React.Dispatch<React.SetStateAction<ComboBoxItem[]>>,
     setCargandoDirecciones: React.Dispatch<React.SetStateAction<boolean>>,
-    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
+    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>
 ) {
     // 1. Poner cargando para que el select de direcciones se bloquee
     // 2. Llamar al API para que me retorne las direcciones pero en forma de ComboBoxItem[]
@@ -847,19 +957,159 @@ async function ActualizarClienteYDireccion(
 
         setCargandoDirecciones(false);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-        console.error(e);
         // si hay un error, hay que mostrar direcciones vacias y el tracking actualizarlo con idDireccion nulo
         ErrorModal('Error al cargar las direcciones', 'Hubo un error al cargar las direcciones');
         setDirecciones([]);
 
         // 3. borrar la direccion enlazada del tracking
     } finally {
-        setTracking( (prev) => ({
+        setTracking((prev) => ({
+                ...prev,
+                idDireccion: -1,
+                idCliente: idCliente
+            })
+        );
+    }
+}
+
+async function CambiarProveedor(
+    idProveedor: number,
+    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
+    tracking: TrackingCompleto,
+    trackingBack: TrackingCompleto,
+    setMensajeDialog: React.Dispatch<React.SetStateAction<MensajeDialog>>,
+    setMostrarDialog: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // 1. Alertar de todos los posibles casos:
+    // 1.1. Si pasa de ML a Aeropost, no poner nada
+    // 1.2. Si pasa de AP a ML, indicar que se va a borrar la prealerta de la app de AP y actualizar la de la app
+
+    // PSTD: Si hay un cambio del proveedor y esta en otro estado != SPR o PDO, hay que cambiarlo a PDO
+
+    // 1.3. Si no ponen ningun proveedor:
+    // 1.3.1: Si esta en SPR, no pasa nada
+    // 1.3.2: Si esta en otro, va a poner un error porque ya hay una prealerta registrada con el proveedor {nombreProveedor}. este error se pone como error, no con modal, porque se vuelve a verificar cuando quiera guardar o prealertar
+    // 1.2. Si pasa de AP a ML, indicar que se va a borrar la prealerta de la app de AP y actualizar la de la app
+    // tomar en cuenta de no mostrar el mensaje del proveedor si cambia del nuevo proveedor al nuevo, xq la alerta no tendria sentido
+    if (trackingBack.idProveedor !== idProveedor && idProveedor !== -1 && tracking.ordenEstatus > 1) {
+        setMensajeDialog({
+            titulo: 'Alerta sobre cambiar de proveedor',
+            descripcion: 'Si cambia el proveedor con el que prealertó y después guarda los cambios, se va a borrar la prealerta del proveedor anterior.'
+        });
+
+        setMostrarDialog(true);
+    }
+
+    setTracking((prev) => ({
+        ...prev,
+        idProveedor: idProveedor
+    }));
+
+    // PSTD: Si hay un cambio del proveedor y esta en otro estado != SPR(1) o PDO(2), hay que cambiarlo a PDO
+    if (tracking.ordenEstatus > 2) {
+        setTracking((prev) => ({
             ...prev,
-            idDireccion: null,
-            idCliente: idCliente
-        }))
+            ordenEstatus: 2,
+            estatus: 'Prealertado',
+            ordenEstatusSincronizado: 2
+        }));
+    }
+
+
+    // 1.3. Si no ponen ningun proveedor:
+
+    // 1.3.1: Si esta en SPR, no pasa nada
+    if (tracking.ordenEstatus == 1) {
+        setTracking((prev) => ({
+            ...prev,
+            idProveedor: idProveedor
+        }));
+    }
+    // 1.3.2: Si esta en otro de SPR, va a poner un error porque ya hay una prealerta registrada con el proveedor {nombreProveedor}. este error se pone como error, no con modal, porque se vuelve a verificar cuando quiera guardar o prealertar
+    if (tracking.ordenEstatus > 1 && idProveedor == -1) {
+        setTracking((prev) => ({
+            ...prev,
+            idProveedor: idProveedor,
+            errores: [
+                {
+                    name: 'idProveedor',
+                    message: 'Ya hay una prealerta registrada con el proveedor: ' + prev.nombreProveedor + '. Indicar proveedor o dejar el anterior.'
+                }
+            ]
+        }));
+    } else {
+        setTracking((prev) => ({
+            ...prev,
+            errores: []
+        }));
+    }
+
+}
+
+async function AccionPreartar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number, setMostrarDialogo: React.Dispatch<React.SetStateAction<boolean>>, setMensajeDialogo: React.Dispatch<React.SetStateAction<MensajeDialog>>) {
+    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
+
+    // 2. Ver el estado actual si es anterior, siguiente o actual.
+    // 2.1. Si es siguiente, prealertar
+    // 2.2. Si es anterior, actualizar prealerta
+    // 2.3. Si es el mismo, actualizar prealerta
+
+    let camposLlenos: boolean = true;
+    setTracking((prev) => ({
+        ...prev,
+        errores: []
+    }));
+
+    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
+    if (tracking.descripcion == '') {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'descripcion', message: 'La descripción es obligatoria' }
+                ]
+        }));
+    }
+
+    if (tracking.valorPrealerta === null || tracking.valorPrealerta <= 0) {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'valorPrealerta', message: 'El valor es obligatorio' }
+                ]
+        }));
+    }
+
+    if (tracking.idProveedor == -1 || tracking.idProveedor == null) {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'idProveedor', message: 'El proveedor es obligatorio' }
+                ]
+        }));
+    }
+
+    if (!camposLlenos) return;
+    // 2. Ver el estado actual si es anterior, siguiente o actual.
+    const estadoSiguiente: boolean = ordenEstadoPresionado - tracking.ordenEstatus === 1; // de SPR a PDO
+    const estadoAnterior: boolean = ordenEstadoPresionado - tracking.ordenEstatus === -1; // de RMI a PDO
+    const estadoActual: boolean = ordenEstadoPresionado === 2; //
+
+    if (estadoSiguiente) {
+        await EstadoSiguienteAccionPrealertar(tracking, setTracking);
+
+    } else if (estadoAnterior) {
+        await EstadoAnteriorAccionPrealertar(tracking, setTracking);
+
+    } else if (estadoActual) {
+        await EstadoActualAccionPrealertar(tracking, setTracking);
+    } else {
+        console.log('No es ninguno');
     }
 }

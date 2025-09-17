@@ -1,0 +1,15 @@
+
+export enum EstadoMBox {
+    SIN_REGISTRAR = -1,
+    NO_SE_ENCONTRO  = -2,
+    SIN_PREALERTAR = 1,
+    PREALERTADO = 2,
+    RECIBIDO_MIAMI = 3,
+    TRANSITO_CR = 4,
+    PROCESO_ADUANAS = 5,
+    OFICINAS_MB = 6,
+    ENTREGADO = 7,
+    FACTURADO = 8,
+    PAQUETE_PERDIDO = 20,
+    ELIMINADO = 25
+}

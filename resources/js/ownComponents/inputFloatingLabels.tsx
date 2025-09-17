@@ -1,5 +1,7 @@
 import { Label } from '@/components/ui/label'; // shadcn Label
 import React from 'react';
+import { Input } from '@/components/ui/input';
+
 
 interface InputFloatingLabelProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
@@ -15,6 +17,7 @@ export default function InputFloatingLabel({
                                                required,
                                                className = "",
                                                classNameContainer = "",
+                                               error = null,
                                                ...props
                                            }: InputFloatingLabelProps) {
     return (
@@ -22,9 +25,10 @@ export default function InputFloatingLabel({
             <input
                 id={id}
                 placeholder=" "
-                className={`peer block w-full rounded-md border border-gray-100 bg-transparent px-3 pt-7 pb-2 text-sm focus:border-orange-400 focus:ring focus:ring-orange-200 focus:outline-none ${className}`}
+                className={`peer block w-full rounded-md border border-gray-100 bg-transparent px-3 pt-7 pb-2 text-sm focus:border-orange-400 focus:ring focus:ring-orange-200 focus:outline-none ${className} ${!!error?.message && 'border-red-400'}`}
                 {...props}
             />
+            <p className='text-red-400'>{error?.message}</p>
 
             <Label
                 htmlFor={id}

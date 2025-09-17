@@ -104,27 +104,6 @@ class Tracking extends Model
         return $this->hasMany(TrackingHistorial::class, 'IDTRACKING', 'id')->whereNull('deleted_at')->orderBy('updated_at', 'asc');
     }
 
-    public function ColorEstado($cotaRica, $entregado, $transito)
-    {
-        return match (true) {
-            $entregado => 'success',
-            $cotaRica => 'danger',
-            $transito => 'warning',
-            default => '',
-        };
-    }
-
-    public function DescripcionEstado($cotaRica, $entregado, $transito)
-    {
-
-        return match (true) {
-            $entregado => 'Ya Entregado',
-            $cotaRica => 'En Costa Rica',
-            $transito => 'En Tránsito',
-            default => '',
-        };
-    }
-
     public function UltimoPaisEstado()
     {
         $ultimoEstado = $this->historialesT
@@ -133,17 +112,6 @@ class Tracking extends Model
             ->first();  // Obtiene el primer elemento después de ordenar
 
         return $ultimoEstado ? $ultimoEstado->PAISESTADO : ''; // Retorna el valor o un valor por defecto si no se encuentra
-    }
-
-    // En App\Models\Tracking.php
-    public function UltimoPaisEstadoObj()
-    {
-        $ultimoEstado = $this->historialesT
-            ->where('PAISESTADO', '!=', '')
-            ->sortByDesc('FECHA')
-            ->first();
-
-        return $ultimoEstado ?: null;
     }
 
     public function estadoMBox(): BelongsTo

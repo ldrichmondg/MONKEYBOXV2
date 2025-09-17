@@ -48,7 +48,7 @@ export interface TrackingConPrealertaBaseProveedor extends TrackingConProveedor,
 
 }
 
-export interface TrackingCompleto extends TrackingBase {
+export interface TrackingCompleto extends TrackingBase, ErroresInputs {
     peso: number;
     idProveedor: number;
     idCliente: number;
@@ -62,6 +62,7 @@ export interface TrackingCompleto extends TrackingBase {
     trackingProveedor: string;
     diasTransito: number;
     idDireccion: number;
+    valorPrealerta: number;
 }
 
 

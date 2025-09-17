@@ -103,7 +103,7 @@ class TrackingController
             $tracking = Tracking::with('historialesT')->findOrFail($id);
             $direcciones = ModelToIdDescripcionDTO::map(Direccion::where('IDCLIENTE', $tracking->direccion->cliente->id)->get());
 
-            return Inertia::render('tracking/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve(), 'direcciones' => $direcciones]);
+            return Inertia::render('tracking/detalle/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve(), 'direcciones' => $direcciones]);
 
         } catch (ModelNotFoundException $e) {
 

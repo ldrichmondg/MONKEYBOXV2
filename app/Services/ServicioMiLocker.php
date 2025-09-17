@@ -54,4 +54,8 @@ class ServicioMiLocker
 
         return $prealerta;
     }
+
+    public static function ActualizarPrealerta(int|null $idPrealerta, string $descripcion, float $valor, string $numeroTracking, string $nombreTienda, int $courierId, int $consigneeId): void{
+        // 1. Actualizar la prealerta, pero como no esta conectado a nada, no hago nada
+    }
 }

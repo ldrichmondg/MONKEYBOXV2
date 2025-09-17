@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Actions\ActionDepurarRegex;
 use App\Exceptions\ExceptionAPCourierNoObtenido;
 use App\Exceptions\ExceptionAPCouriersNoObtenidos;
+use App\Exceptions\ExceptionAPRequestActualizarPrealerta;
+use App\Exceptions\ExceptionAPRequestEliminarPrealerta;
 use App\Exceptions\ExceptionAPRequestRegistrarPrealerta;
 use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Models\Prealerta;
@@ -48,10 +50,10 @@ class ServicioAeropost
         ServicioAeropost::ObtenerTokenAcceso();
 
         // 2. Obtenemos los couriers de Aeropost
-        $couriers = ServicioAeropost::ObtenerCouriers();
+        $couriers = self::ObtenerCouriers();
 
         // 3. Obtenemos el courier de nuestro idTracking gracias al regex
-        $courierSeleccionado = ServicioAeropost::ObtenerCourier($couriers, $tracking->IDTRACKING);
+        $courierSeleccionado = self::ObtenerCourier($couriers, $tracking->IDTRACKING);
         Log::info('CourierSeleccionado: '.json_encode($courierSeleccionado));
 
         // 4. Al obtener el courier, nombreTienda va a ser: Tienda de {courier}
@@ -96,7 +98,7 @@ class ServicioAeropost
 
         // 1.1 Si se tiene, solicitarlo desde la caché
         if (Cache::has('aeropost_access_token')) {
-            $accessToken = Cache::get('aeropost_access_token');
+            return Cache::get('aeropost_access_token');
         }
 
         // 1.2 Si no, se solicita mediante el endpoint
@@ -315,5 +317,72 @@ class ServicioAeropost
         }
 
         return $respuesta['id'];
+    }
+
+    /**
+     * @throws ExceptionAPTokenNoObtenido
+     * @throws ConnectionException
+     * @throws ExceptionAPRequestActualizarPrealerta
+     */
+    public static function ActualizarPrealerta(int $idPrealerta, string $descripcion, float $valor, string $numeroTracking, string $nombreTienda, int $courierId, int $consigneeId): void{
+        // 1. Obtener el token de Acceso
+        // 2. Actualizar los campos
+
+        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        // 1. Crear los encabezados
+        $headers = [
+            'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
+            'Accept' => 'application/json',
+            'content-type' => 'application/json',
+        ];
+
+        // - Se lanza el try para atrapar el ConnectionException (Si no se logro hacer conexión con el servidor de AP del t#do, duró mucho el request, etc) para envolverlo en la excepcion ExceptionAPRequestRegistrarPrealerta
+        try {
+            // Poner los datos necesarios
+            $respuesta = Http::withHeaders($headers)->put($url, [
+                'consigneeId' => $consigneeId,
+                'courierId' => $courierId,
+                'courierTracking' => $numeroTracking,
+                'storeName' => $nombreTienda,
+                'value' => $valor,
+                'description' => $descripcion,
+            ]);
+            // investigar que es ConnectionException
+            Log::info('[ServicioAeropost, AP] ActualizarPrealerta: '.json_encode($respuesta->json()));
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPRequestActualizarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
+        }
+
+        // Si algo falla (porque el servidor de AP nos lo envía, ya sea error o no), lanzar excepcion
+        if (!$respuesta->successful()) {
+            // falta log
+            throw new ExceptionAPRequestActualizarPrealerta('La respuesta de AP no fue exitosa');
+        }
+
+        Log::info('[ServicioAeropost, AP] Prealerta de AP con exito! ');
+
+    }
+
+    public static function EliminarPrealerta(int $idPrealerta){
+        // 1. Con el $idPrealerta elimino la prealerta de aeropost
+
+        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        // 1. Crear los encabezados
+        $headers = [
+            'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
+            'Accept' => 'application/json',
+            'content-type' => 'application/json',
+        ];
+
+        // - Se lanza el try para atrapar el ConnectionException (Si no se logro hacer conexión con el servidor de AP del t#do, duró mucho el request, etc) para envolverlo en la excepcion ExceptionAPRequestRegistrarPrealerta
+        try {
+            // Poner los datos necesarios
+            $respuesta = Http::withHeaders($headers)->delete($url, []);
+            // investigar que es ConnectionException
+            Log::info('[ServicioAeropost, EP] EliminarPrealerta: '.json_encode($respuesta->json()));
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPRequestEliminarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
+        }
+
     }
 }
