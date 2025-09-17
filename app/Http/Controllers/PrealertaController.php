@@ -13,6 +13,7 @@ use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Exceptions\ExceptionPrealertaNotFound;
 use App\Exceptions\ExceptionTrackingProveedorNotFound;
 use App\Http\Requests\RequestCrearPrealerta;
+use App\Http\Requests\RequestEliminarPrealerta;
 use App\Http\Resources\TrackingRecienPrealertadoConProveedorResource;
 use App\Services\ServicioPrealerta;
 use Illuminate\Database\QueryException;
@@ -71,6 +72,23 @@ class PrealertaController extends Controller
         }
         catch(ConnectionException $e){
             return response()->error('Hubo un error al comunicarse con la app de Aeropost.', 'Error al comunicarse con app de Aeropost', 500, EnumCodigosAppError::ERROR_AEROPOST);
+        }
+    }
+
+    /**
+     * @param RequestEliminarPrealerta $request
+     * @return JsonResponse
+     * @throws ExceptionPrealertaNotFound
+     * @throws ExceptionTrackingProveedorNotFound
+     * @throws QueryException
+     * @throws ExceptionAPRequestEliminarPrealerta
+     */
+    public function EliminarJson(RequestEliminarPrealerta $request): JsonResponse {
+        try{
+            ServicioPrealerta::EliminarPrealerta($request->idTracking);
+            return response()->json('Exito', 200);
+        } catch( QueryException $e){
+            return response()->error('Error al eliminar prealerta');
         }
     }
 }

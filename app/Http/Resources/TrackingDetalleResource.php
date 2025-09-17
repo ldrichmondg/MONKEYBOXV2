@@ -26,7 +26,7 @@ class TrackingDetalleResource extends JsonResource
             'couriers' => $this->COURIER,
             'diasTransito' => empty($this->DIASTRANSITO) ? 'N/A' : $this->DIASTRANSITO,
             'peso' => $this->PESO,
-            'idProveedor' => $idProveedor,
+            'idProveedor' => $idProveedor == null ? -1 : $idProveedor,
             'nombreProveedor' => $nombreProveedor,
             'idCliente' => $this->direccion->cliente->id,
             'idDireccion' => $this->direccion->id,

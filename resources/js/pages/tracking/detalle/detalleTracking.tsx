@@ -26,10 +26,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/ownComponents/combobox';
-import { toast } from 'sonner';
+
 import { Toaster } from '@/components/ui/sonner';
 import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
-import { TrackingCompleto, TrackingConPrealertaBase, TrackingConPrealertaBaseProveedor } from '@/types/tracking';
+import { TrackingCompleto } from '@/types/tracking';
 import { Head } from '@inertiajs/react';
 import {
     Box,
@@ -55,9 +55,8 @@ import { HistorialTracking } from '@/types/historialTracking';
 
 //importar archivo auxiliar
 import {
-    EstadoActualAccionPrealertar,
-    EstadoAnteriorAccionPrealertar,
-    EstadoSiguienteAccionPrealertar
+    AccionPreartar,
+    AccionSinPrealertar
 } from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
 
 interface Props {
@@ -186,6 +185,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
 
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="SPR"
+                                    onClick={() => AccionSinPrealertar(setTracking, trackingFront, 1)}
                                 />
                                 <MoveRight
                                     className={trackingFront.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
@@ -195,7 +195,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PDO"
-                                    onClick={() => AccionPreartar(setTracking, trackingFront, 2, setMostrarDialog, setMensajeDialog)}
+                                    onClick={() => AccionPreartar(setTracking, trackingFront, 2)}
                                 />
                                 <MoveRight
                                     className={trackingFront.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
@@ -304,7 +304,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     onChange={(e) => {
                                         setTracking((prev) => ({
                                             ...prev,
-                                            valorPrealerta: parseFloat(e.target.value)
+                                            valorPrealerta: e.target.value === '' ? null : parseFloat(e.target.value)
                                         }));
                                     }}
                                     error={trackingFront.errores.find((error) => error.name == 'valorPrealerta')}
@@ -1021,12 +1021,7 @@ async function CambiarProveedor(
     // 1.3. Si no ponen ningun proveedor:
 
     // 1.3.1: Si esta en SPR, no pasa nada
-    /*if (tracking.ordenEstatus == 1) {
-        setTracking((prev) => ({
-            ...prev,
-            idProveedor: idProveedor
-        }));
-    }*/
+
     // 1.3.2: Si esta en otro de SPR, va a poner un error porque ya hay una prealerta registrada con el proveedor {nombreProveedor}. este error se pone como error, no con modal, porque se vuelve a verificar cuando quiera guardar o prealertar
     if (tracking.ordenEstatus > 1 && idProveedor == -1) {
         setTracking((prev) => ({
@@ -1046,71 +1041,4 @@ async function CambiarProveedor(
         }));
     }
 
-}
-
-async function AccionPreartar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number, setMostrarDialogo: React.Dispatch<React.SetStateAction<boolean>>, setMensajeDialogo: React.Dispatch<React.SetStateAction<MensajeDialog>>) {
-    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
-
-    // 2. Ver el estado actual si es anterior, siguiente o actual.
-    // 2.1. Si es siguiente, prealertar
-    // 2.2. Si es anterior, actualizar prealerta
-    // 2.3. Si es el mismo, actualizar prealerta
-
-    let camposLlenos: boolean = true;
-    setTracking((prev) => ({
-        ...prev,
-        errores: []
-    }));
-
-    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
-    if (tracking.descripcion == '') {
-        camposLlenos = false;
-        setTracking((prev) => ({
-            ...prev,
-            errores:
-                [...prev.errores,
-                    { name: 'descripcion', message: 'La descripción es obligatoria' }
-                ]
-        }));
-    }
-
-    if (tracking.valorPrealerta === null || tracking.valorPrealerta <= 0) {
-        camposLlenos = false;
-        setTracking((prev) => ({
-            ...prev,
-            errores:
-                [...prev.errores,
-                    { name: 'valorPrealerta', message: 'El valor es obligatorio' }
-                ]
-        }));
-    }
-
-    if (tracking.idProveedor == -1 || tracking.idProveedor == null) {
-        camposLlenos = false;
-        setTracking((prev) => ({
-            ...prev,
-            errores:
-                [...prev.errores,
-                    { name: 'idProveedor', message: 'El proveedor es obligatorio' }
-                ]
-        }));
-    }
-
-    if (!camposLlenos) return;
-    // 2. Ver el estado actual si es anterior, siguiente o actual.
-    const estadoSiguiente: boolean = ordenEstadoPresionado - tracking.ordenEstatus === 1; // de SPR a PDO
-    const estadoAnterior: boolean = ordenEstadoPresionado - tracking.ordenEstatus === -1; // de RMI a PDO
-    const estadoActual: boolean = ordenEstadoPresionado === 2; //
-
-    if (estadoSiguiente) {
-        await EstadoSiguienteAccionPrealertar(tracking, setTracking);
-
-    } else if (estadoAnterior) {
-        await EstadoAnteriorAccionPrealertar(tracking, setTracking);
-
-    } else if (estadoActual) {
-        await EstadoActualAccionPrealertar(tracking, setTracking);
-    } else {
-        console.log('No es ninguno');
-    }
 }

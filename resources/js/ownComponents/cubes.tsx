@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { Icon, LucideIcon } from 'lucide-react';
 
 
 interface Props {

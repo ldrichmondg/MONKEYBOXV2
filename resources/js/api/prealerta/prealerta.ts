@@ -42,3 +42,38 @@ export async function ActualizarPrealerta(prealerta: PrealertaActualizar): Promi
     await response.json();
     return { ...prealerta, errores: [] };
 }
+
+export async function EliminarPrealertaPorTracking(numeroTracking: number): Promise<void>{
+    // 1. Hacer el request donde se envia la solicitud
+
+    const response = await fetch(route('usuario.prealerta.eliminar.json'), {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+            idTracking: numeroTracking
+        }),
+    });
+
+    if (response.status === 422) {
+        const errores = await ErrorHttp422Validation(prealerta, response);
+        return { ...prealerta, errores };
+    }
+
+    if (!response.ok) {
+        const errorResponse: ResponseError = await response.json(); //no retorna nada porque es actualizar, pero si retorna, son errores
+        errorResponse.httpStatus = response.status;
+
+        await administracionErrores(errorResponse, "Error al eliminar la prealerta", false);
+        throw new AppError(errorResponse.errorApp , response.status, "Error al eliminar la prealerta", errorResponse.titleMessage);
+    }
+
+    // Si llegó acá es que t#do bien
+    await response.json();
+
+
+
+}

@@ -8,9 +8,10 @@ import { TrackingCompleto, TrackingConPrealertaBaseProveedor } from '@/types/tra
 import { PrealertarTracking } from '@/api/tracking/prealertarTracking';
 import React from 'react';
 import { PrealertaActualizar } from '@/types/prealerta';
-import { ActualizarPrealerta } from '@/api/prealerta/prealerta';
+import { ActualizarPrealerta, EliminarPrealertaPorTracking } from '@/api/prealerta/prealerta';
 import { EstadoMBox } from '@/types/estadoMBox';
-import { AppError} from '@/types/erroresExcepciones';
+import { AppError } from '@/types/erroresExcepciones';
+
 
 export async function EstadoSiguienteAccionPrealertar(tracking: TrackingCompleto, setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, ){
     // # El estado siguiente consiste en que el tracking esta en el SPR y va a pasar a PDO
@@ -176,6 +177,170 @@ async function ActualizarPrealertaAux(tracking: TrackingCompleto, setTracking: R
             toast.error('Error al actualizar prealerta', {
                 id: idToastPrealertar,
                 description: textoToast
+            });
+        }
+    }
+}
+
+
+export async function AccionPreartar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number) {
+    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
+
+    // 2. Ver el estado actual si es anterior, siguiente o actual.
+    // 2.1. Si es siguiente, prealertar
+    // 2.2. Si es anterior, actualizar prealerta
+    // 2.3. Si es el mismo, actualizar prealerta
+
+    let camposLlenos: boolean = true;
+    setTracking((prev) => ({
+        ...prev,
+        errores: []
+    }));
+
+    // 1. Validar que los campos de descripcion, valor y proveedor esten llenos
+    if (tracking.descripcion == '') {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'descripcion', message: 'La descripción es obligatoria' }
+                ]
+        }));
+    }
+
+    if (tracking.valorPrealerta === null || tracking.valorPrealerta <= 0) {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'valorPrealerta', message: 'El valor es obligatorio' }
+                ]
+        }));
+    }
+
+    if (tracking.idProveedor == -1 || tracking.idProveedor == null) {
+        camposLlenos = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'idProveedor', message: 'El proveedor es obligatorio' }
+                ]
+        }));
+    }
+
+    if (!camposLlenos) return;
+    // 2. Ver el estado actual si es anterior, siguiente o actual.
+    const estadoSiguiente: boolean = ordenEstadoPresionado - tracking.ordenEstatus === 1; // de SPR a PDO
+    const estadoAnterior: boolean = ordenEstadoPresionado - tracking.ordenEstatus === -1; // de RMI a PDO
+    const estadoActual: boolean = ordenEstadoPresionado === 2; //
+
+    if (estadoSiguiente) {
+        await EstadoSiguienteAccionPrealertar(tracking, setTracking);
+
+    } else if (estadoAnterior) {
+        await EstadoAnteriorAccionPrealertar(tracking, setTracking);
+
+    } else if (estadoActual) {
+        await EstadoActualAccionPrealertar(tracking, setTracking);
+    } else {
+        console.log('No es ninguno');
+    }
+}
+
+
+// Si presiona el btn SPR
+export async function AccionSinPrealertar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number, setMostrarDialogo: React.Dispatch<React.SetStateAction<boolean>>, setMensajeDialogo: React.Dispatch<React.SetStateAction<MensajeDialog>>) {
+    // 1. Verificar que los campos de idProveedor, descripcion y valor estén vacíos
+    // 2. Solo funcionará si pasa de PDO -> SPR, osea estadoAnterior
+    // 3. Consultarle al usuario si desea eliminar la prealerta.
+    // 4. Elimina la prealerta
+    // 5. Poner estados en Sin Prealertar
+
+    let camposVacios: boolean = true;
+    setTracking((prev) => ({
+        ...prev,
+        errores: []
+    }));
+
+    // 1. Verificar que los campos de idProveedor, descripcion y valor estén vacíos
+    if (tracking.descripcion != '') {
+        camposVacios = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'descripcion', message: 'La descripción debe estar vacía' }
+                ]
+        }));
+    }
+
+    if (tracking.valorPrealerta !== null) {
+        camposVacios = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'valorPrealerta', message: 'El valor debe estar vacío' }
+                ]
+        }));
+    }
+
+    if (tracking.idProveedor != -1) {
+        camposVacios = false;
+        setTracking((prev) => ({
+            ...prev,
+            errores:
+                [...prev.errores,
+                    { name: 'idProveedor', message: 'El proveedor debe estar vacío' }
+                ]
+        }));
+    }
+
+    if (!camposVacios) return;
+
+    // 2. Solo funcionará si pasa de PDO -> SPR, osea estadoAnterior
+    const estadoAnterior: boolean = ordenEstadoPresionado - tracking.ordenEstatus == -1;
+
+    if(!estadoAnterior) return;
+
+    // 3. Consultarle al usuario si desea eliminar la prealerta.
+    const respuestaAceptada = await SeguroModal({
+        titulo: 'Cambiar estado: PDO -> SPR',
+        description: '¿Está seguro de eliminar la prealerta?'
+    });
+
+    if (!respuestaAceptada) return;
+
+    const idToastEliminarPrealerta = toast.loading('Nuevo evento ejecutado', {
+        description: 'Eliminando Prealerta...'
+    });
+
+    try {
+        // 4. Elimina la prealerta
+        await EliminarPrealertaPorTracking(tracking.idTracking);
+
+        toast.success("Prealerta eliminada con éxito!", {
+            id: idToastEliminarPrealerta,
+            description: 'Se eliminó la prealerta con éxito.'
+        });
+
+        // 5. Poner estados en Sin Prealertar
+        setTracking((prev) => ({
+            ...prev,
+            estatus: 'Sin Prealertar',
+            ordenEstatus: 1,
+            ordenEstatusSincronizado: 1
+        }));
+
+    } catch (e: any) {
+
+        if (e instanceof AppError) {
+            toast.error('Error al eliminar la prealerta', {
+                id: idToastEliminarPrealerta,
+                description: 'Hubo un error al eliminar la prealerta. Intentalo de nuevo o contacta al soporte TI.'
             });
         }
     }

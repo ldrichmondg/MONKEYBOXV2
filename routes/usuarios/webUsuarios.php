@@ -39,4 +39,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/prealerta/registro/json', [PrealertaController::class, 'RegistroJson'])->name('usuario.prealerta.registro.json');
 
     Route::post('/prealerta/actualiza/json', [PrealertaController::class, 'ActualizaJson'])->name('usuario.prealerta.actualiza.json');
+
+    Route::put('/prealerta/eliminar/json', [PrealertaController::class, 'EliminarJson'])->name('usuario.prealerta.eliminar.json');
 });

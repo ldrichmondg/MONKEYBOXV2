@@ -118,7 +118,6 @@ class ServicioPrealerta
             }
 
             if (!$tracking->trackingProveedor->prealerta) {
-                Log::info('[SP, AP] IF DE ExceptionPrealertaNotFound');
                 throw new ExceptionPrealertaNotFound();
             }
 
@@ -175,5 +174,50 @@ class ServicioPrealerta
             $tracking->ESTADOMBOX = 'Prealertado';
             $tracking->save();
         });
+    }
+
+    /**
+     * @param int $numeroTracking
+     * @return void
+     * @throws ExceptionPrealertaNotFound
+     * @throws ExceptionTrackingProveedorNotFound
+     * @throws QueryException
+     * @throws ExceptionAPRequestEliminarPrealerta
+     */
+    public static function EliminarPrealerta(string $numeroTracking): void{
+        // 1. obtener el tracking por el $numeroTracking
+        // 2. Obtener la prealerta y trackingProveedor (EX: Verificar si ambas existen antes de borrar)
+        // 3. Si el proveedor es AP, eliminar la prealerta
+        // 4. Eliminar forzocamente cada una
+
+        // 1. obtener el tracking por el $numeroTracking
+        $tracking = Tracking::where('IDTRACKING', $numeroTracking)->firstOrFail();
+
+        // 2. Obtener la prealerta y trackingProveedor (EX: Verificar si ambas existen antes de borrar)
+        if (!$tracking->trackingProveedor) {
+            throw new ExceptionTrackingProveedorNotFound();
+        }
+
+        if (!$tracking->trackingProveedor->prealerta) {
+            throw new ExceptionPrealertaNotFound();
+        }
+
+        // 3. Si el proveedor es AP, eliminar la prealerta
+        $trackingProveedor = $tracking->trackingProveedor;
+        $prealerta = $trackingProveedor->prealerta;
+
+        if($trackingProveedor->proveedor->NOMBRE == 'Aeropost'){
+            ServicioAeropost::EliminarPrealerta($prealerta->IDPREALERTA);
+            $prealerta->IDPREALERTA = null;
+        }
+
+        // 4. Eliminar cada una como softDelete
+        $trackingProveedor->delete();
+        $prealerta->delete();
+
+        // 5. Poner el estado como Sin Prealertar y guardar
+        $tracking->ESTADOMBOX = 'Sin Prealertar';
+        $tracking->ESTADOSINCRONIZADO = 'Sin Prealertar';
+        $tracking->save();
     }
 }
