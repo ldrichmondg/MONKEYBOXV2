@@ -26,7 +26,6 @@ import { InputError } from '@/types/input';
 export function Combobox( {items = [], placeholder, classNames = '', onChange, isActive, error, idSelect} : {items: ComboBoxItem[], placeholder: string, classNames?: string, onChange?: (idSeleccionado : number) => void, isActive: boolean, error?: InputError, idSelect?: number }) {
     const [open, setOpen] = React.useState(false)
     const [value, setValue] = React.useState('')
-    /*asi funcionaba !!error?.message */
 
     React.useEffect(() => {
         if (idSelect && items.length > 0) {

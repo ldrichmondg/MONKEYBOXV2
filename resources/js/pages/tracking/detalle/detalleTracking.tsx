@@ -411,12 +411,13 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                         items={clientes}
                                         placeholder="Selec. cliente..."
                                         classNames=" !min-w-[100%] lg:w-60 p-6"
-                                        isActive={true}
+                                        isActive={trackingFront.ordenEstatus == 1}
                                         idSelect={trackingFront.idCliente}
                                         onChange={(idSeleccionado) =>
                                             ActualizarClienteYDireccion(idSeleccionado, setDireccionesFront, setCargandoDirecciones, setTracking)
                                         }
                                         error={trackingFront.errores.find((error) => error.name == 'idCliente')}
+
                                     />
                                 </div>
                             </div>
@@ -1020,12 +1021,12 @@ async function CambiarProveedor(
     // 1.3. Si no ponen ningun proveedor:
 
     // 1.3.1: Si esta en SPR, no pasa nada
-    if (tracking.ordenEstatus == 1) {
+    /*if (tracking.ordenEstatus == 1) {
         setTracking((prev) => ({
             ...prev,
             idProveedor: idProveedor
         }));
-    }
+    }*/
     // 1.3.2: Si esta en otro de SPR, va a poner un error porque ya hay una prealerta registrada con el proveedor {nombreProveedor}. este error se pone como error, no con modal, porque se vuelve a verificar cuando quiera guardar o prealertar
     if (tracking.ordenEstatus > 1 && idProveedor == -1) {
         setTracking((prev) => ({
