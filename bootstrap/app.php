@@ -1,11 +1,13 @@
 <?php
 
+use App\Exceptions\EnumCodigosAppError;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,8 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
 
         $exceptions->respond(function ($response) {
+            $request = request();
+
             if ($response->getStatusCode() === 419) {
-                $request = request();
 
                 // cerramos la sesion para que lo diriga al login. Si no se cierra la sesion, lo manda al dashboard y pueden haber confusiones
                 auth()->logout(); // cerrar sesión
@@ -37,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     return response()->json([
                         "status" => "error",
                         'message' => 'La página expiró. Inténtelo de nuevo.',
+                        'titleMessage' => 'Página expirada',
                         'redirect' => route('login'),
                     ],419);
                 }
@@ -45,7 +49,6 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->with('error', 'Tu sesión expiró, por favor inicia sesión de nuevo.');
             }
             elseif ($response->getStatusCode() === 401) {
-                $request = request();
 
                 // cerramos la sesion para que lo diriga al login. Si no se cierra la sesion, lo manda al dashboard y pueden haber confusiones
                 auth()->logout(); // cerrar sesión
@@ -56,12 +59,20 @@ return Application::configure(basePath: dirname(__DIR__))
                     return response()->json([
                         "status" => "error",
                         'message' => 'No tienes acceso al recurso que intentaste acceder, inicia sesión de nuevo.',
+                        'titleMessage' => 'Sin acceso',
                         'redirect' => route('login'),
                     ],401);
                 }
 
                 return redirect()->route('login')
                     ->with('error', 'No tienes acceso al recurso que intentaste acceder, inicia sesión de nuevo.');
+            }
+
+            if ($request->expectsJson() && $response->getStatusCode() !== 422) {
+                $exception = $response->exception ?? null;
+                if ($exception) Log::error($exception); //sino no lo pone en el laravel.log
+
+                return response()->error("Ha ocurrido un error inesperado. Inténtalo de nuevo más tarde.", 'Error', 500, EnumCodigosAppError::ERROR_INTERNO);
             }
 
             return $response;
