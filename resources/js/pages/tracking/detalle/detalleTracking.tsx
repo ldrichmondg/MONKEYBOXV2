@@ -58,6 +58,7 @@ import {
     AccionPreartar,
     AccionSinPrealertar
 } from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
+import { Imagen } from '@/types/imagenes';
 
 interface Props {
     tracking: TrackingCompleto;
@@ -121,6 +122,10 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
     const [cargandoDirecciones, setCargandoDirecciones] = useState<boolean>(false);
     const [mostrarDialog, setMostrarDialog] = useState<boolean>(false);
 
+    //variables de archivos
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [imagenesTracking, setImagenesTracking] =  useState<Imagen[]>([]);
+
     useEffect(() => {
         cargarProveedores(setProveedores);
     }, []);
@@ -139,19 +144,17 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
-            <Head title={trackingFront.idTracking + '- MBox'} />
+            <Head title={trackingFront.idTracking} />
             <MainContainer>
                 <div className="flex w-full gap-4 pt-3">
                     <Card className="flex w-[25%] max-w-[55%] flex-col px-[0.9rem] py-3 xl:w-[55%] xl:max-w-[25%]">
                         <CardHeader className={'w-[100%] p-0'}>
                             <div className={'flex justify-between'}>
-                                <div
-                                    className="flex size-9 items-center justify-center rounded-sm bg-red-400 px-2 text-sidebar-primary-foreground">
+                                <div className="flex size-9 items-center justify-center rounded-sm bg-red-400 px-2 text-sidebar-primary-foreground">
                                     <Box className="size-7 dark:text-black" />
                                 </div>
 
-                                <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"> Hijos: 1
-                                    de 1</Button>
+                                <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"> Hijos: 1 de 1</Button>
                             </div>
                         </CardHeader>
 
@@ -179,100 +182,67 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                         <CardContent className={'flex flex-row justify-between p-0'}>
                             <div className="flex max-w-[90%] flex-row items-center gap-3 p-0">
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                        ${trackingFront.ordenEstatus > 0 ? 'bg-orange-400' : 'bg-gray-400'}
-                                        ${trackingFront.ordenEstatus - 1 == 1 ? 'cursor-pointer' : ''} `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 0 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus - 1 == 1 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="SPR"
                                     onClick={() => AccionSinPrealertar(setTracking, trackingFront, 1)}
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                    ${trackingFront.ordenEstatus > 1 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 1 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PDO"
                                     onClick={() => AccionPreartar(setTracking, trackingFront, 2)}
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                    ${trackingFront.ordenEstatus > 2 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3 ? 'cursor-pointer' : ''} `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 2 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="RMI"
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 3 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 3 ? 'size-12 text-orange-400 hover:bg-orange-500' : 'size-12 text-gray-400 '} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                    ${trackingFront.ordenEstatus > 3 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4 ? 'cursor-pointer' : ''} `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 3 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="TCR"
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 4 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 4 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                        ${trackingFront.ordenEstatus > 4 ? 'bg-orange-400' : 'bg-gray-400'}
-                                        ${trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5 ? 'cursor-pointer' : ''}
-                                    `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 4 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PA"
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 5 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 5 ? 'size-12 text-orange-400 ' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 5 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6 ? 'cursor-pointer' : ''}
-                                    `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 5 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="OMB"
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 6 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 6 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 6 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7 ? 'cursor-pointer' : ''}
-                                    `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 6 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="EN"
+                                    onClick={() => setTracking( (prev) => ({ ...prev, estatus: 'Entregado', ordenEstatus: 7}))}
                                 />
-                                <MoveRight
-                                    className={trackingFront.ordenEstatus > 7 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 7 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12
-                                    ${trackingFront.ordenEstatus > 7 ? 'bg-orange-400' : 'bg-gray-400'}
-                                    ${trackingFront.ordenEstatus + 1 == 8 || trackingFront.ordenEstatus - 1 == 8 ? 'cursor-pointer' : ''} `}
-
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 7 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 8 || trackingFront.ordenEstatus - 1 == 8 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="FDO"
                                 />
                             </div>
 
                             <div className="max-w-[10%]">
-                                <Cubes className="size-12 bg-gray-400 px-7" hijoClassName="font-bold text-lg"
-                                       name="OTR" />
+                                <Cubes className="size-12 bg-gray-400 hover:bg-gray-500 px-7" hijoClassName="font-bold text-lg" name="OTR" />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 <div className="grid grid-cols-1 justify-between py-3 lg:flex lg:flex-row">
-                    <Card
-                        className="flex h-auto w-[100%] max-w-[100%] flex-col p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
-                        <CardHeader
-                            className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
+                    <Card className="flex h-auto w-[100%] max-w-[100%] flex-col overflow-y-auto p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
+                        <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Encabezado Tracking</p>
                             <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500">
                                 Tracking Siguiente: <CircleX className={'size-5'} />{' '}
@@ -304,7 +274,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     onChange={(e) => {
                                         setTracking((prev) => ({
                                             ...prev,
-                                            valorPrealerta: e.target.value === '' ? null : parseFloat(e.target.value)
+                                            valorPrealerta: e.target.value === '' ? null : parseFloat(e.target.value),
                                         }));
                                     }}
                                     error={trackingFront.errores.find((error) => error.name == 'valorPrealerta')}
@@ -370,8 +340,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     <Label htmlFor="couriers" className="px-2 text-gray-500">
                                         Courier/s
                                     </Label>
-                                    <Input type="text" id="couriers" placeholder="Courier/s" value={tracking.couriers}
-                                           readOnly />
+                                    <Input type="text" id="couriers" placeholder="Courier/s" value={tracking.couriers} readOnly />
                                 </div>
 
                                 <InputFloatingLabel
@@ -417,7 +386,6 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                             ActualizarClienteYDireccion(idSeleccionado, setDireccionesFront, setCargandoDirecciones, setTracking)
                                         }
                                         error={trackingFront.errores.find((error) => error.name == 'idCliente')}
-
                                     />
                                 </div>
                             </div>
@@ -446,13 +414,76 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     error={trackingFront.errores.find((error) => error.name == 'observaciones')}
                                 />
                             </div>
+
+                            <div className={'flex w-[100%] pb-2'}>
+                                <Card className="flex h-auto w-[100%] max-w-[100%] flex-col p-0">
+                                    <CardHeader className={'flex w-[100%] flex-row items-center justify-start gap-5 px-4 pt-3'}>
+                                        <p className="text-lg text-gray-500">Fotos</p>
+                                        <Button
+                                            className="size-8 bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"
+                                            onClick={() => {
+                                                fileInputRef.current?.click();
+                                            }}
+                                        >
+                                            <Plus />
+                                        </Button>
+                                    </CardHeader>
+
+                                    <CardContent className={'flex justify-start gap-4 overflow-x-scroll px-3 pt-0 pb-2'}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            ref={fileInputRef}
+                                            onChange={(event) => AgregarArchivoSeleccionado(setTracking, setImagenesTracking, event)}
+                                            hidden
+                                        />
+                                        {imagenesTracking.map((imagen) => (
+                                            <div className={'relative h-40 w-40 flex-shrink-0'}>
+                                                <img
+                                                    src={URL.createObjectURL(imagen.archivo)}
+                                                    alt="Vista previa"
+                                                    className="h-full w-full rounded-lg border border-gray-300 object-cover"
+                                                />
+
+                                                {imagen.archivoPropio && (
+                                                    <Button
+                                                        className="absolute top-1 right-1 bg-opacity-50  py-1 rounded size-8 bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"
+                                                        onClick={() => {
+                                                            console.log('Prueba')
+                                                            setImagenesTracking( (prev) => prev.filter( (img) => img.id !== imagen.id))
+                                                        }}
+                                                    >
+                                                        <Trash />
+                                                    </Button>
+                                                )}
+
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {trackingFront.ordenEstatus >= 7 && (
+                                <div className={'flex flex-col w-[100%] pb-2'}>
+
+                                    <InputFloatingLabel
+                                        id="factura"
+                                        type="file"
+                                        label="Factura"
+                                        classNameContainer={'w-full'}
+                                        error={trackingFront.errores.find((error) => error.name == 'factura')}
+                                        required
+                                        onChange={ (event) => { console.log(event.target.files?.[0])}}
+                                    />
+
+                                </div>
+                            )}
+
                         </CardContent>
                     </Card>
 
-                    <Card
-                        className="mt-4 flex w-[100%] max-w-[100%] flex-col gap-0 p-0 lg:mt-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
-                        <CardHeader
-                            className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
+                    <Card className="mt-4 flex w-[100%] max-w-[100%] flex-col gap-0 p-0 lg:mt-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
+                        <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Historial Tracking</p>
 
                             <div className={'flex gap-3'}>
@@ -494,15 +525,16 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>{mensajeDialog.titulo}</DialogTitle>
-                                <DialogDescription>
-                                    {mensajeDialog.descripcion}
-                                </DialogDescription>
+                                <DialogDescription>{mensajeDialog.descripcion}</DialogDescription>
                             </DialogHeader>
                             <DialogFooter className="sm:justify-start">
                                 <DialogClose asChild>
-                                    <Button type="button" variant="secondary"
-                                            className={'bg-black text-white hover:bg-gray-500'}
-                                            onClick={() => setMostrarDialog(false)}>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className={'bg-black text-white hover:bg-gray-500'}
+                                        onClick={() => setMostrarDialog(false)}
+                                    >
                                         Entendido
                                     </Button>
                                 </DialogClose>
@@ -513,7 +545,6 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
 
                 {/* TOASTER PARA MENSAJES */}
                 <Toaster position="top-center" />
-
             </MainContainer>
         </AppLayout>
     );
@@ -1040,5 +1071,28 @@ async function CambiarProveedor(
             errores: []
         }));
     }
+
+}
+
+function AgregarArchivoSeleccionado(
+    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
+    setImagenesTracking: React.Dispatch<React.SetStateAction<Imagen[]>>,
+    event: React.ChangeEvent<HTMLInputElement>
+    ){
+    // # Funcion para agregar los archivos seleccionados a la galeria de archivos del tracking
+
+    const file = event.target.files?.[0];
+
+    if(!file) return;
+
+    const imagen: Imagen = {
+        id: 1,
+        archivo: file,
+        archivoPropio: true
+    }
+    if (file) {
+        setImagenesTracking((prev) => ([...prev, imagen])); // Crea URL temporal para vista previa
+    }
+
 
 }

@@ -1,6 +1,7 @@
 import { Label } from '@/components/ui/label'; // shadcn Label
 import React from 'react';
 import { Input } from '@/components/ui/input';
+import { InputError } from '@/types/input';
 
 
 interface InputFloatingLabelProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -9,6 +10,7 @@ interface InputFloatingLabelProps extends React.InputHTMLAttributes<HTMLInputEle
     id: string;
     className?: string;
     classNameContainer?: string;
+    error: InputError | undefined;
 }
 
 export default function InputFloatingLabel({
@@ -17,7 +19,7 @@ export default function InputFloatingLabel({
                                                required,
                                                className = "",
                                                classNameContainer = "",
-                                               error = null,
+                                               error = undefined,
                                                ...props
                                            }: InputFloatingLabelProps) {
     return (
