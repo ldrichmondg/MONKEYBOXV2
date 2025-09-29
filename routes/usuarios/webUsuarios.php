@@ -5,6 +5,7 @@ use App\Http\Controllers\EstadoMBoxController;
 use App\Http\Controllers\PrealertaController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 // Nomenclatura a usar:
@@ -41,4 +42,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/prealerta/actualiza/json', [PrealertaController::class, 'ActualizaJson'])->name('usuario.prealerta.actualiza.json');
 
     Route::put('/prealerta/eliminar/json', [PrealertaController::class, 'EliminarJson'])->name('usuario.prealerta.eliminar.json');
+});
+
+//RUTAS USUARIOS
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('usuario/consulta/vista', [UsuarioController::class, 'ConsultaVista'])->name('usuario.usuario.consulta.vista');
+    Route::get('usuario/consulta/json', [UsuarioController::class, 'ConsultaJson'])->name('usuario.usuario.consulta.json');
+
+    Route::post('/usuario/eliminar/json', [UsuarioController::class, 'EliminarJson'])->name('usuario.usuario.eliminar.json');
+
+    Route::get('/usuario/detalle/vista/{id}', [UsuarioController::class, 'DetalleVista'])->name('usuario.usuario.detalle.vista');
+    Route::post('/usuario/actualiza/json', [UsuarioController::class, 'ActualizaJson'])->name('usuario.usuario.actualiza.json');
+
+    Route::get('/usuario/registro/vista', [UsuarioController::class, 'RegistroVista'])->name('usuario.usuario.registro.vista');
+    Route::post('/usuario/registro/json', [UsuarioController::class,  'RegistroJson'])->name('usuario.usuario.registro.json');
 });

@@ -35,9 +35,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import * as React from 'react';
 
 import { iconMap } from '@/lib/iconMap';
-import { TrackingConsultadosTable, TrackingTable } from '@/types/tracking';
+import { TrackingTable } from '@/types/tracking';
 import { WithActions } from '@/types/table';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface Props {
     trackings: TrackingTable[];
@@ -197,7 +197,7 @@ export default function ConsultaTracking({trackings}: Props) {
     );
 }
 
-export const columns: ColumnDef<TrackingTable>[] = [
+const columns: ColumnDef<TrackingTable>[] = [
     {
         id: 'select',
         header: ({ table }) => (
@@ -314,7 +314,6 @@ export const columns: ColumnDef<TrackingTable>[] = [
         id: 'actions',
         enableHiding: false,
         cell: ({ row }) => {
-            const object = row.original;
             const actions = (row.original as WithActions).actions ?? [];
 
             return (
@@ -328,11 +327,11 @@ export const columns: ColumnDef<TrackingTable>[] = [
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        {actions.map((action) => {
+                        {actions.map((action, index) => {
                             const LucideIcon: LucideIcon = iconMap[action.icon ?? "UserPlus"]
                             const needsModal = (action.actionMessage != undefined && action.actionModalTitle != undefined);
                             return (
-                                <DropdownMenuItem key={object.id} onClick={async () => { if(needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined) EliminarModal({ description: action.actionMessage, titulo: action.actionModalTitle, route: action.route})} }>
+                                <DropdownMenuItem key={index} onClick={async () => { if(needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined) EliminarModal({ description: action.actionMessage, titulo: action.actionModalTitle, route: action.route})} }>
                                     <Link href={!needsModal ? action.route : ''} className="flex flex-nowrap items-center gap-2">
                                         <LucideIcon/> <span>{action.descripcion} </span>
                                     </Link>

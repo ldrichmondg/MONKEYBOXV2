@@ -20,8 +20,8 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'usuarios',
-        href: '/usuarios',
-        icon: Users ,
+        href: route('usuario.usuario.consulta.vista'),
+        icon: Users,
     },
 ];
 

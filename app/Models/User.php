@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Mail;
 
 class User extends Model implements AuthenticatableContract, CanResetPassword
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use Authenticatable, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = ['CEDULA', 'NOMBRE', 'APELLIDOS', 'email', 'TELEFONO', 'IDPERFIL', 'email_verified_at', 'password'];
@@ -35,12 +34,11 @@ class User extends Model implements AuthenticatableContract, CanResetPassword
     public function getEmailForPasswordReset()
     {
         return $this->email;
-
     }
 
     public function sendPasswordResetNotification($token): void
     {
-        $url = 'http://127.0.0.1:8000/reset-password/'.$token;
+        $url = config('app.url') . '/reset-password/' . $token;
         Mail::to($this->email)->send(new RecoverPassword($url));
     }
 

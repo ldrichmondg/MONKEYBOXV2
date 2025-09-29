@@ -26,7 +26,7 @@ export async function ActualizarPrealerta(prealerta: PrealertaActualizar): Promi
     });
 
     if (response.status === 422) {
-        const errores = await ErrorHttp422Validation(prealerta, response);
+        const errores = await ErrorHttp422Validation(response);
         return { ...prealerta, errores };
     }
 
@@ -59,7 +59,7 @@ export async function EliminarPrealertaPorTracking(numeroTracking: number): Prom
     });
 
     if (response.status === 422) {
-        const errores = await ErrorHttp422Validation(prealerta, response);
+        const errores = await ErrorHttp422Validation(response);
         return { ...prealerta, errores };
     }
 
@@ -73,7 +73,4 @@ export async function EliminarPrealertaPorTracking(numeroTracking: number): Prom
 
     // Si llegó acá es que t#do bien
     await response.json();
-
-
-
 }

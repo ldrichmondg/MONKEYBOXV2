@@ -2,11 +2,17 @@
 
 namespace App\Services;
 
+use App\Events\EventoRegistroUsuario;
 use App\Models\User;
 use Exception;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ServicioUsuario
 {
@@ -37,35 +43,62 @@ class ServicioUsuario
         }
     }
 
-    public static function Editar($request): array
-    {
+    /**
+     * @param int $id
+     * @return void
+     * @throws QueryException
+     */
+    public static function Eliminar(int $id): void {
+        User::destroy($id);
+    }
 
-        try {
-            $item = User::find($request->idUsuario);
+    /**
+     * @param int $idUsuario
+     * @param string $nombre
+     * @param string $apellidos
+     * @param string $telefono
+     * @param string $email
+     * @param string $empresa
+     * @return void
+     * @throws ModelNotFoundException
+     */
+    public static function Actualizar(int $idUsuario, string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa): void {
 
-            $currentUser = Auth::user();
-            if ($item->id != $currentUser->id && $currentUser->NAME != 'Administrador') {
-                redirect()->route('noAccess');
-            }
-            $item->CEDULA = $request->cedula;
-            $item->NOMBRE = $request->nombre;
-            $item->email = $request->email;
-            $item->APELLIDOS = $request->apellidos;
-            $item->TELEFONO = $request->telefono;
+        $usuario = User::findOrFail($idUsuario);
+        $usuario->NOMBRE = $nombre;
+        $usuario->APELLIDOS = $apellidos;
+        $usuario->TELEFONO = $telefono;
+        $usuario->email = $email;
+        $usuario->EMPRESA = $empresa;
+        $usuario->save();
+        Log::info('Usuario actualizado exitosamente');
+    }
 
-            $item->save();
+    /**
+     * @param string $nombre
+     * @param string $apellidos
+     * @param string $telefono
+     * @param string $email
+     * @param string|null $empresa
+     * @return void
+     */
+    public static function Registrar(string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa): void {
 
-            return [
-                'state' => 'Exito',
-                'mensaje' => 'Se actualizo el usuario de forma exitosa',
-            ];
+        $pass = Str::random(10);
 
-        } catch (Exception $e) {
+        $usuario = new User();
+        $usuario->NOMBRE = $nombre;
+        $usuario->APELLIDOS = $apellidos;
+        $usuario->TELEFONO = $telefono;
+        $usuario->email = $email;
+        $usuario->EMPRESA = $empresa;
+        $usuario->IDPERFIL = 2;
+        $usuario->password = $pass; //se hace hash en el modelo
+        $usuario->save();
 
-            return [
-                'state' => 'Error',
-                'mensaje' => 'Hubo un error al actualizar el usuario',
-            ];
-        }
+        EventoRegistroUsuario::dispatch($usuario, $pass);
+        event(new Registered($usuario));
+
+        Log::info('Usuario registrado exitosamente');
     }
 }

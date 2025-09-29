@@ -20,19 +20,9 @@ class ListenerEnviarCorreoRegistro
     /**
      * Handle the event.
      */
-    public function handle(EventoRegistroUsuario $event): bool
+    public function handle(EventoRegistroUsuario $event): void
     {
-        try {
-            $usuario = $event->usuario;
-
-            Mail::to($usuario->email)->send(new EmailRegistroUsuario($usuario));
-
-            return true; // allow event propagation
-
-        } catch (Exception $e) {
-            // Handle the exception
-            return false; // stop event propagation
-        }
-
+        $usuario = $event->usuario;
+        Mail::to($usuario->email)->send(new EmailRegistroUsuario($usuario));
     }
 }

@@ -93,7 +93,7 @@ function ErrorHttp500ServerError(responseError: ResponseError, statusCode: numbe
     }
 }
 
-export async function ErrorHttp422Validation(object: ErroresInputs, response: Response): Promise<InputError[]> {
+export async function ErrorHttp422Validation(response: Response): Promise<InputError[]> {
     // # Administrar el error 422, donde se llena el campo de arreglo errores y se le asigna a object.errores los errores
 
     if (response.status === 422) {

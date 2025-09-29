@@ -2,7 +2,7 @@ import Swal from 'sweetalert2'
 import {ErrorModal} from '@/ownComponents/modals/errorModal';
 import {ExitoModal} from '@/ownComponents/modals/exitoModal';
 
-async function ContenidoModal(titulo: string, textoCuerpo: string): Promise<boolean> {
+export async function ContenidoModal(titulo: string, textoCuerpo: string): Promise<boolean> {
     return new Promise((resolve) => {
         Swal.fire({
             html: `
@@ -30,13 +30,18 @@ export async function EliminarModal({ description = '', titulo = '', route = '' 
 
     try{
         const result: Response = await fetch(route, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json', //esto es para que no hara redirecciones automaticas y me indique el response
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            }
         })
 
         if (result.ok){
             ExitoModal('Éxito', 'Se eliminó exitosamente.');
         }else{
-            throw new Error('Problema con el request: ' + result.json());
+            throw new Error('Problema con el request: ' + await result.json());
         }
     }
     catch(error) {
