@@ -96,12 +96,7 @@ export default function ConsultaTracking({trackings}: Props) {
                             <span className="mr-2 font-semibold">Trackings</span>
 
                             <div className="flex flex-1 items-center justify-end">
-                                <Input
-                                    placeholder="Filter emails..."
-                                    value={(table.getColumn('descripcion')?.getFilterValue() as string) ?? ''}
-                                    onChange={(event) => table.getColumn('descripcion')?.setFilterValue(event.target.value)}
-                                    className="max-w-sm"
-                                />
+
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" className="ml-1">
@@ -298,18 +293,36 @@ const columns: ColumnDef<TrackingTable>[] = [
         cell: ({ row }) => <div className="lowercase">{row.getValue('couriers')}</div>,
     },
     {
-        accessorKey: 'estatus',
+        id: 'estatus',
+        accessorFn: (row) => row.estatus.descripcion,
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button
+                    variant="ghost"
+                    className="text-gray-500"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                >
                     Estatus
                     <ArrowUpDown />
                 </Button>
             );
         },
-        cell: ({ row }) => <Badge className={"lowercase text-white " + row.original.estatus.colorClass} variant="secondary">{row.original.estatus.descripcion}</Badge>
-    ,
+        cell: ({ row }) => (
+            <Badge
+                className={"lowercase text-white " + row.original.estatus.colorClass}
+                variant="secondary"
+            >
+                {row.original.estatus.descripcion}
+            </Badge>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+            return row
+                .getValue(columnId)
+                ?.toLowerCase()
+                .includes(filterValue.toLowerCase());
+        },
     },
+
     {
         id: 'actions',
         enableHiding: false,

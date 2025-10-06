@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\DataTransformers\ModelToIdDescripcionDTO;
+use App\Exceptions\ExceptionArchivosDO;
+use App\Http\Requests\RequestActualizarEstado;
+use App\Http\Requests\RequestActualizarTracking;
+use App\Http\Requests\RequestActualizarTrackingEliminarFactura;
+use App\Http\Requests\RequestActualizarTrackingSubirFactura;
 use App\Http\Requests\RequestTrackingRegistro;
 use App\Http\Resources\ClientesComboboxItemsResource;
 use App\Http\Resources\TrackingConsultadosTableResource;
@@ -14,6 +19,7 @@ use App\Models\Tracking;
 use App\Services\ServicioCliente;
 use App\Services\ServicioTracking;
 use Exception;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use League\Flysystem\FilesystemException;
 
 // Nomenclatura a usar:
 // SubmoduloAccion (recursoID)
@@ -37,7 +44,7 @@ class TrackingController
         try {
             $trackings = Tracking::all();
             Log::info($trackings);
-            return Inertia::render('tracking/consultaTracking', ['trackings' =>  TrackingConsultadosTableResource::collection($trackings)->resolve()]);
+            return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
@@ -106,8 +113,65 @@ class TrackingController
             return Inertia::render('tracking/detalle/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve(), 'direcciones' => $direcciones]);
 
         } catch (ModelNotFoundException $e) {
-
+            Log::info($e->getMessage());
             return back()->with('error', 'Hubo un error al buscar el tracking');
         }
     }
+
+    /**
+     * @param RequestActualizarTracking $request
+     * @return JsonResponse
+     */
+    public function ActualizaJson(RequestActualizarTracking $request): JsonResponse
+    {
+        try {
+            Log::info('ENTRAMOS');
+            ServicioTracking::ActualizarTracking($request);
+            return response()->json(['Exito']);
+        } catch (Exception $e) {
+            Log::info('[TC, AJ] error: '. $e->getMessage());
+            return response()->error('Hubo un error al actualizar el tracking');
+        }
+    }
+
+    /**
+     * @param RequestActualizarEstado $request
+     * @return JsonResponse
+     */
+    public function ActualizaEstado(RequestActualizarEstado $request): JsonResponse{
+        try{
+            $trackingActualizado = ServicioTracking::ActualizarEstado($request);
+            $trackingActualizado->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
+
+            return response()->json(['trackingActualizado' => (new TrackingDetalleResource($trackingActualizado))->resolve()]);
+        }catch (Exception $e){
+            Log::info($e->getMessage());
+            return response()->error('Hubo un problema al actualizar los estados del tracking');
+        }
+    }
+
+    public function SubirFactura(RequestActualizarTrackingSubirFactura $request): JsonResponse{
+        try{
+            $trackingActualizado = ServicioTracking::SubirFactura($request);
+            $trackingActualizado->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
+
+            return response()->json(['trackingActualizado' => (new TrackingDetalleResource($trackingActualizado))->resolve()]);
+        }catch (Exception $e){
+            Log::info('[TC, SF] error: '. $e->getMessage());
+            return response()->error('Hubo un error al subir la factura del tracking');
+        }
+    }
+
+    public function EliminarFactura(RequestActualizarTrackingEliminarFactura $request): JsonResponse{
+        try{
+            $trackingActualizado = ServicioTracking::EliminarFactura($request);
+            $trackingActualizado->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
+
+            return response()->json(['trackingActualizado' => (new TrackingDetalleResource($trackingActualizado))->resolve()]);
+        }catch (Exception $e){
+            Log::info('[TC, SF] error: '. $e->getMessage());
+            return response()->error('Hubo un error al eliminar la factura del tracking');
+        }
+    }
+
 }

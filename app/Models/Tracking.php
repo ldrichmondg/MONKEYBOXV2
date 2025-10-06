@@ -48,7 +48,7 @@ class Tracking extends Model
         'RUTAFACTURA',
         'ESTADOMBOX',
         'OBSERVACIONES',
-        'ESTADOSINCRONIZADO'
+        'ESTADOSINCRONIZADO',
     ];
 
     /**

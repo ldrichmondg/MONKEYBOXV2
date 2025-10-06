@@ -20,6 +20,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tracking/registro/guardar', [TrackingController::class, 'RegistroJson'])->name('usuario.tracking.registro.guardar');
     Route::get('/tracking/detalle/vista/{id}', [TrackingController::class, 'Detalle'])->name('usuario.tracking.detalle.vista');
     Route::get('/tracking/consulta/json', [TrackingController::class, 'ConsultaJson'])->name('usuario.tracking.consulta.json');
+    Route::post('/tracking/actualiza/json', [TrackingController::class, 'ActualizaJson'])->name('usuario.tracking.actualiza.json');
+
+    Route::post('/tracking/actualiza/json/cambioestado', [TrackingController::class, 'ActualizaEstado'])->name('usuario.tracking.json.cambioestado');
+    Route::post('/tracking/actualiza/json/subirFactura', [TrackingController::class, 'SubirFactura'])->name('usuario.tracking.actualiza.json.subirfactura');
+    Route::post('/tracking/actualiza/json/eliminarFactura', [TrackingController::class, 'EliminarFactura'])->name('usuario.tracking.actualiza.json.eliminarfactura');
+
 });
 
 // RUTAS CONFIGURACION

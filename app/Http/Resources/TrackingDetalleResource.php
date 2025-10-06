@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
+use \Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class TrackingDetalleResource extends JsonResource
 {
@@ -17,6 +19,7 @@ class TrackingDetalleResource extends JsonResource
         $idProveedor = optional($this->trackingProveedor)->IDPROVEEDOR;
         $nombreProveedor = optional(optional($this->trackingProveedor)->proveedor)->NOMBRE;
         $cliente = $this->direccion->cliente;
+
         return [
             'id' => $this->id,
             'idTracking' => $this->IDTRACKING,
@@ -41,7 +44,10 @@ class TrackingDetalleResource extends JsonResource
             'valorPrealerta' => optional(optional($this->trackingProveedor)->prealerta)->VALOR !== null ? $this->trackingProveedor->prealerta->VALOR : 1.5,
             'descripcion' => optional(optional($this->trackingProveedor)->prealerta)->DESCRIPCION !== null ? $this->trackingProveedor->prealerta->DESCRIPCION : '',
             'cliente' => (new DetalleClienteTrackingResource($cliente))->resolve(),
-            'imagenes' => []
-            ];
+            'imagenes' => DetalleImagenResource::collection($this->imagenes)->resolve(),
+            'factura' => $this->ESTADOMBOX === 'Facturado' && !empty($this->RUTAFACTURA)
+                ? Storage::disk('do')->temporaryUrl($this->RUTAFACTURA, now()->addMinutes(10))
+                : null,
+        ];
     }
 }

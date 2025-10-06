@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('RUTA', 300);
             $table->unsignedBigInteger('IDTRACKING');
             $table->foreign('IDTRACKING')->references('id')->on('tracking');
+            $table->timestamps();
         });
     }
 

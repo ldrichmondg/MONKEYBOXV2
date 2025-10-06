@@ -6,47 +6,22 @@ import InputFloatingLabel from '@/ownComponents/inputFloatingLabels';
 import { WhatsappIcon } from '@/ownComponents/svgs/whatsApp';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogClose
-} from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/ownComponents/combobox';
 
 import { Toaster } from '@/components/ui/sonner';
 import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
 import { TrackingCompleto } from '@/types/tracking';
-import { Head } from '@inertiajs/react';
-import {
-    Box,
-    Calendar,
-    CircleCheck,
-    CircleX,
-    Clock4,
-    LucideIcon,
-    MoreHorizontal,
-    MoveRight,
-    Plus,
-    RotateCcw,
-    Trash
-} from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Box, Calendar, CircleCheck, CircleX, Clock4, FileDown, LucideIcon, MoreHorizontal, MoveRight, Plus, RotateCcw, Trash } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 //api calls
+import { ActualizarTracking, SubirFactura } from '@/api/tracking/detalleTracking';
 import { iconMap } from '@/lib/iconMap';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { comboboxDirecciones } from '@/servicesFront/direccion/servicioFrontDireccion';
@@ -54,13 +29,22 @@ import { cargarProveedores } from '@/servicesFront/proveedor/servicioFrontProvee
 import { HistorialTracking } from '@/types/historialTracking';
 
 //importar archivo auxiliar
-import {
-    AccionPreartar,
-    AccionSinPrealertar
-} from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
-import { Imagen } from '@/types/imagenes';
-import { ClienteCompleto, ClienteTracking } from '@/types/cliente';
 import { ObtenerCliente } from '@/api/clientes/cliente';
+import { EliminarModal } from '@/ownComponents/modals/eliminarModal';
+import { Spinner } from '@/ownComponents/spinner';
+import {
+    AccionEliminar,
+    AccionEN,
+    AccionOMB,
+    AccionPA, AccionPaquetePerdido,
+    AccionPreartar,
+    AccionRMI,
+    AccionSinPrealertar,
+    AccionTCR
+} from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
+import { ClienteCompleto, ClienteTracking } from '@/types/cliente';
+import { Imagen } from '@/types/imagenes';
+import { ExitoModal } from '@/ownComponents/modals/exitoModal';
 
 interface Props {
     tracking: TrackingCompleto;
@@ -76,14 +60,13 @@ interface MensajeDialog {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Consulta Trackings',
-        href: route('tracking.consulta.vista')
+        href: route('tracking.consulta.vista'),
     },
     {
         title: 'Detalle',
-        href: route('tracking.registroMasivo.vista')
-    }
+        href: route('tracking.registroMasivo.vista'),
+    },
 ];
-
 
 export default function DetalleTracking({ tracking, clientes, direcciones }: Props) {
     const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
@@ -99,6 +82,10 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
     //variables de archivos
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    //variables de actualizar
+    const [actualizando, setActualizando] = useState<boolean>(false);
+    const [guardandoFactura, setGuardandoFactura] = useState<boolean>(false);
+
     //variables de header
     const buttons: ButtonHeader[] = [
         {
@@ -106,9 +93,8 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
             name: 'Sincronizar Cambios',
             className: 'bg-orange-400 text-white hover:bg-orange-500 ',
             isActive: true,
-            onClick: () => {
-            },
-            icon: RotateCcw
+            onClick: () => {},
+            icon: RotateCcw,
         },
         {
             id: 'contactarCliente',
@@ -116,17 +102,18 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
             className: 'bg-green-400 text-white hover:bg-green-300 ',
             isActive: !cargandoDirecciones,
             onClick: () => ContactarCliente(trackingFront),
-            icon: WhatsappIcon
+            icon: WhatsappIcon,
         },
         {
             id: 'guardarCambios',
             name: 'Guardar cambios',
             className: 'bg-red-400 text-white hover:bg-red-300 ',
             isActive: true,
-            onClick: () => ActualizarTracking(trackingFront)
-        }
+            onClick: () => ActualizarTrackingAux(trackingFront),
+        },
     ];
 
+    console.log(tracking);
 
     useEffect(() => {
         cargarProveedores(setProveedores);
@@ -168,6 +155,12 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     className="text-bold"
                                     placeholder="Indique el #proveedor..."
                                     value={trackingFront.trackingProveedor}
+                                    onChange={(e) =>
+                                        setTracking((prev) => ({
+                                            ...prev,
+                                            trackingProveedor: e.target.value,
+                                        }))
+                                    }
                                 />
                             ) : (
                                 <p className="text-bold"> {trackingFront.trackingProveedor} </p>
@@ -184,59 +177,116 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                         <CardContent className={'flex flex-row justify-between p-0'}>
                             <div className="flex max-w-[90%] flex-row items-center gap-3 p-0">
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 0 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus - 1 == 1 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 0 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus - 1 == 1 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="SPR"
                                     onClick={() => AccionSinPrealertar(setTracking, trackingFront, 1)}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 1 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 1 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 1 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 1 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 2 || trackingFront.ordenEstatus - 1 == 2 || trackingFront.ordenEstatus == 2 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PDO"
-                                    onClick={() => AccionPreartar(setTracking, trackingFront, 2)}
+                                    onClick={() => {
+                                        AccionPreartar(setTracking, trackingFront, 2);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 2 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 2 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 2 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 2 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="RMI"
+                                    onClick={() => {
+                                        if (trackingFront.ordenEstatus + 1 == 3 || trackingFront.ordenEstatus - 1 == 3)
+                                            AccionRMI(setTracking, trackingFront, setActualizando);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 3 ? 'size-12 text-orange-400 hover:bg-orange-500' : 'size-12 text-gray-400 '} />
+                                <MoveRight
+                                    className={
+                                        trackingFront.ordenEstatus > 3 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400 hover:bg-orange-500' : 'size-12 text-gray-400'
+                                    }
+                                />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 3 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 3 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="TCR"
+                                    onClick={() => {
+                                        if (trackingFront.ordenEstatus + 1 == 4 || trackingFront.ordenEstatus - 1 == 4)
+                                            AccionTCR(setTracking, trackingFront, setActualizando);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 4 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 4 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 4 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 4 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="PA"
+                                    onClick={() => {
+                                        if (trackingFront.ordenEstatus + 1 == 5 || trackingFront.ordenEstatus - 1 == 5)
+                                            AccionPA(setTracking, trackingFront, setActualizando);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 5 ? 'size-12 text-orange-400 ' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 5 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 5 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 5 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="OMB"
+                                    onClick={() => {
+                                        if (trackingFront.ordenEstatus + 1 == 6 || trackingFront.ordenEstatus - 1 == 6)
+                                            AccionOMB(setTracking, trackingFront, setActualizando);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 6 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 6 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 6 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 6 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7 ? 'cursor-pointer' : ''} `}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="EN"
-                                    onClick={() => setTracking( (prev) => ({ ...prev, estatus: 'Entregado', ordenEstatus: 7}))}
+                                    onClick={() => {
+                                        if (trackingFront.ordenEstatus + 1 == 7 || trackingFront.ordenEstatus - 1 == 7)
+                                            AccionEN(setTracking, trackingFront, setActualizando);
+                                    }}
                                 />
-                                <MoveRight className={trackingFront.ordenEstatus > 7 ? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
+                                <MoveRight className={trackingFront.ordenEstatus > 7 && trackingFront.ordenEstatus < 20? 'size-12 text-orange-400' : 'size-12 text-gray-400'} />
                                 <Cubes
-                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 7 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} ${trackingFront.ordenEstatus + 1 == 8 || trackingFront.ordenEstatus - 1 == 8 ? 'cursor-pointer' : ''} `}
+                                    className={`px-7 lg:size-10 xl:size-12 ${trackingFront.ordenEstatus > 7 && trackingFront.ordenEstatus < 20? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'}`}
                                     hijoClassName="font-bold xl:text-lg lg:text-md md:text-sm"
                                     name="FDO"
                                 />
                             </div>
 
                             <div className="max-w-[10%]">
-                                <Cubes className="size-12 bg-gray-400 hover:bg-gray-500 px-7" hijoClassName="font-bold text-lg" name="OTR" />
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+
+                                            <Cubes
+                                                className={`px-7 lg:size-10 xl:size-12 cursor-pointer ${trackingFront.ordenEstatus >= 20 ? 'bg-orange-400 hover:bg-orange-500' : 'bg-gray-400 hover:bg-gray-500'} `}
+                                                hijoClassName="font-bold text-lg"
+                                                name="OTR"
+                                            />
+
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Otros Estados</DropdownMenuLabel>
+
+                                        <DropdownMenuItem
+                                            key={'btnItemEliminado'}
+                                            onClick={async () => {
+                                                await AccionEliminar(setTracking, trackingFront, setActualizando);
+                                            }}
+                                        >
+                                            Eliminado
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            key={'btnItemPaquetePerdido'}
+                                            onClick={async () => {
+                                                await AccionPaquetePerdido(setTracking, trackingFront, setActualizando);
+                                            }}
+                                        >
+                                            Paquete Perdido
+                                        </DropdownMenuItem>
+
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </CardContent>
                     </Card>
@@ -402,6 +452,12 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     classNames="w-60 p-6"
                                     isActive={!cargandoDirecciones}
                                     idSelect={trackingFront.idDireccion}
+                                    onChange={(idSeleccionado) =>
+                                        setTracking((prev) => ({
+                                            ...prev,
+                                            idDireccion: idSeleccionado,
+                                        }))
+                                    }
                                     error={trackingFront.errores.find((error) => error.name == 'idDireccion')}
                                 />
                             </div>
@@ -413,6 +469,12 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                     value={trackingFront.observaciones}
                                     label="Observaciones"
                                     classNameContainer={'w-full'}
+                                    onChange={(e) =>
+                                        setTracking((prev) => ({
+                                            ...prev,
+                                            observaciones: e.target.value,
+                                        }))
+                                    }
                                     error={trackingFront.errores.find((error) => error.name == 'observaciones')}
                                 />
                             </div>
@@ -436,31 +498,30 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                             type="file"
                                             accept="image/*"
                                             ref={fileInputRef}
-                                            onChange={(event) => AgregarArchivoSeleccionado(setTracking, event)}
+                                            onChange={(event) => AgregarArchivoSeleccionado(trackingFront, setTracking, event)}
                                             hidden
                                         />
                                         {trackingFront.imagenes.map((imagen) => (
                                             <div className={'relative h-40 w-40 flex-shrink-0'}>
                                                 <img
-                                                    src={URL.createObjectURL(imagen.archivo)}
+                                                    src={typeof imagen.archivo === 'string' ? imagen.archivo : URL.createObjectURL(imagen.archivo)}
                                                     alt="Vista previa"
                                                     className="h-full w-full rounded-lg border border-gray-300 object-cover"
                                                 />
 
                                                 {imagen.archivoPropio && (
                                                     <Button
-                                                        className="absolute top-1 right-1 bg-opacity-50  py-1 rounded size-8 bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"
+                                                        className="bg-opacity-50 absolute top-1 right-1 size-8 rounded bg-orange-400 px-5 py-1 text-sm text-white hover:bg-orange-500"
                                                         onClick={() => {
                                                             setTracking((prev) => ({
                                                                 ...prev,
-                                                                imagenes: prev.imagenes.filter( (img) => img.id !== imagen.id)
-                                                            }))
+                                                                imagenes: prev.imagenes.filter((img) => img.id !== imagen.id),
+                                                            }));
                                                         }}
                                                     >
                                                         <Trash />
                                                     </Button>
                                                 )}
-
                                             </div>
                                         ))}
                                     </CardContent>
@@ -468,21 +529,28 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                             </div>
 
                             {trackingFront.ordenEstatus >= 7 && (
-                                <div className={'flex flex-col w-[100%] pb-2'}>
-
+                                <div className={'flex w-[100%] gap-2 pb-2'}>
                                     <InputFloatingLabel
                                         id="factura"
                                         type="file"
                                         label="Factura"
-                                        classNameContainer={'w-full'}
+                                        classNameContainer={'w-[90%]'}
                                         error={trackingFront.errores.find((error) => error.name == 'factura')}
                                         required
-                                        onChange={ (event) => { console.log(event.target.files?.[0])}}
+                                        onChange={(event) => IngresoFactura(setTracking, trackingFront, setGuardandoFactura, event)}
                                     />
+                                    {/* Si ya hay factura subida, mostrar botón para abrir */}
 
+                                    <Button
+                                        type="button"
+                                        onClick={() => window.open(trackingFront.factura as string, '_blank')}
+                                        className="h-full !w-[10%] text-orange-400"
+                                        disabled={!trackingFront?.factura || guardandoFactura}
+                                    >
+                                        <FileDown className={'size-6 text-white'} />
+                                    </Button>
                                 </div>
                             )}
-
                         </CardContent>
                     </Card>
 
@@ -549,22 +617,23 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
 
                 {/* TOASTER PARA MENSAJES */}
                 <Toaster position="top-center" />
+                <Spinner isActive={actualizando}></Spinner>
             </MainContainer>
         </AppLayout>
     );
 }
 
 function RowHistorialTracking({
-                                  historial,
-                                  setTracking
-                              }: {
+    historial,
+    setTracking,
+}: {
     historial: HistorialTracking;
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>;
 }) {
     const [verModificada, setVerModificada] = useState<boolean>(historial.descripcionModificada != '');
     const [editar, setEditar] = useState<boolean>(false);
     const [descripcionActualizando, setDescripcionActualizando] = useState<string>(
-        historial.descripcionModificada != '' ? historial.descripcionModificada : historial.descripcion
+        historial.descripcionModificada != '' ? historial.descripcionModificada : historial.descripcion,
     );
 
     useEffect(() => {
@@ -577,20 +646,20 @@ function RowHistorialTracking({
             historialesTracking: prev.historialesTracking.map((historialPrev) =>
                 historialPrev.id === historial.id
                     ? {
-                        ...historialPrev,
-                        ocultado: !historialPrev.ocultado,
-                        actions: historialPrev.actions.map((actionPrev) =>
-                            actionPrev.actionType === 'SwitchOcultar'
-                                ? {
-                                    ...actionPrev,
-                                    descripcion: actionPrev.descripcion == 'Ocultar' ? 'Mostrar' : 'Ocultar',
-                                    icon: actionPrev.icon == 'EyeOff' ? 'Eye' : 'EyeOff'
-                                }
-                                : actionPrev
-                        )
-                    }
-                    : historialPrev
-            )
+                          ...historialPrev,
+                          ocultado: !historialPrev.ocultado,
+                          actions: historialPrev.actions.map((actionPrev) =>
+                              actionPrev.actionType === 'SwitchOcultar'
+                                  ? {
+                                        ...actionPrev,
+                                        descripcion: actionPrev.descripcion == 'Ocultar' ? 'Mostrar' : 'Ocultar',
+                                        icon: actionPrev.icon == 'EyeOff' ? 'Eye' : 'EyeOff',
+                                    }
+                                  : actionPrev,
+                          ),
+                      }
+                    : historialPrev,
+            ),
         }));
     }
 
@@ -602,18 +671,18 @@ function RowHistorialTracking({
                 historialesTracking: prev.historialesTracking.map((historialPrev) =>
                     historialPrev.id === historial.id
                         ? {
-                            ...historialPrev,
-                            actions: historialPrev.actions.map((actionPrev) =>
-                                actionPrev.actionType === 'VerOriginal'
-                                    ? {
-                                        ...actionPrev,
-                                        descripcion: nuevoVerModificada ? 'Ver Original' : 'Ver Propia'
-                                    }
-                                    : actionPrev
-                            )
-                        }
-                        : historialPrev
-                )
+                              ...historialPrev,
+                              actions: historialPrev.actions.map((actionPrev) =>
+                                  actionPrev.actionType === 'VerOriginal'
+                                      ? {
+                                            ...actionPrev,
+                                            descripcion: nuevoVerModificada ? 'Ver Original' : 'Ver Propia',
+                                        }
+                                      : actionPrev,
+                              ),
+                          }
+                        : historialPrev,
+                ),
             }));
             return nuevoVerModificada; // devolvemos el valor correcto
         });
@@ -642,20 +711,20 @@ function RowHistorialTracking({
             historialesTracking: prevTracking.historialesTracking.map((historialPrev) =>
                 historialPrev.id == historial.id
                     ? {
-                        ...historialPrev,
-                        descripcionModificada: descripcionActualizando,
-                        actions: historialPrev.actions.map((actionPrev) =>
-                            actionPrev.actionType === 'VerOriginal'
-                                ? {
-                                    ...actionPrev,
-                                    descripcion: 'Ver Original',
-                                    isActive: true
-                                }
-                                : actionPrev
-                        )
-                    }
-                    : historialPrev
-            )
+                          ...historialPrev,
+                          descripcionModificada: descripcionActualizando,
+                          actions: historialPrev.actions.map((actionPrev) =>
+                              actionPrev.actionType === 'VerOriginal'
+                                  ? {
+                                        ...actionPrev,
+                                        descripcion: 'Ver Original',
+                                        isActive: true,
+                                    }
+                                  : actionPrev,
+                          ),
+                      }
+                    : historialPrev,
+            ),
         }));
 
         // 3. verModificada = true
@@ -680,10 +749,10 @@ function RowHistorialTracking({
                     historial.tipo == 1
                         ? 'text-md bg-green-300 px-[5px] text-white'
                         : historial.tipo == 2
-                            ? 'text-md bg-red-400 px-[5px] text-white'
-                            : historial.tipo == 3
-                                ? 'text-md bg-blue-400 px-[5px] text-white'
-                                : 'text-md bg-black px-[5px] text-white'
+                          ? 'text-md bg-red-400 px-[5px] text-white'
+                          : historial.tipo == 3
+                            ? 'text-md bg-blue-400 px-[5px] text-white'
+                            : 'text-md bg-black px-[5px] text-white'
                 }
             >
                 {historial.tipo == 1 ? 'PA' : historial.tipo == 2 ? 'MB' : historial.tipo == 3 ? 'AP' : 'OT'}
@@ -784,11 +853,11 @@ function RowHistorialTracking({
 }
 
 function RowHistorialTrackingBoceto({
-                                        historialB,
-                                        setHistorialesBocetos,
-                                        setTracking,
-                                        historialesTracking
-                                    }: {
+    historialB,
+    setHistorialesBocetos,
+    setTracking,
+    historialesTracking,
+}: {
     historialB: HistorialTracking;
     setHistorialesBocetos: React.Dispatch<React.SetStateAction<HistorialTracking[]>>;
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>;
@@ -806,11 +875,11 @@ function RowHistorialTrackingBoceto({
             prevHistoriales.map((historial) =>
                 historial.id == historialB.id
                     ? {
-                        ...historial,
-                        descripcion: nuevaDescripcion
-                    }
-                    : historial
-            )
+                          ...historial,
+                          descripcion: nuevaDescripcion,
+                      }
+                    : historial,
+            ),
         );
     }
 
@@ -840,7 +909,7 @@ function RowHistorialTrackingBoceto({
 
         setTracking((prevTracking) => ({
             ...prevTracking,
-            historialesTracking: [...prevTracking.historialesTracking, historialB]
+            historialesTracking: [...prevTracking.historialesTracking, historialB],
         }));
 
         // 3. Eliminar el historial del arreglo de bocetos
@@ -908,7 +977,7 @@ function RowHistorialTrackingBoceto({
 function AgregarHistorialTracking(
     setHistorialesBocetos: React.Dispatch<React.SetStateAction<HistorialTracking[]>>,
     historialesBocetos: HistorialTracking[],
-    id: number
+    id: number,
 ) {
     // Agregar un historialTrackingBoceto al array
 
@@ -950,23 +1019,23 @@ function AgregarHistorialTracking(
                 icon: 'Edit',
                 actionType: 'Editar',
                 isActive: true,
-                route: ''
+                route: '',
             },
             {
                 descripcion: 'Ver Original',
                 icon: 'ArrowLeftRight',
                 actionType: 'VerOriginal',
                 isActive: false,
-                route: ''
+                route: '',
             },
             {
                 descripcion: 'Ocultar',
                 icon: 'EyeOff',
                 actionType: 'SwitchOcultar',
                 isActive: true,
-                route: ''
-            }
-        ]
+                route: '',
+            },
+        ],
     };
 
     setHistorialesBocetos((prevHistoriales) => [...prevHistoriales, historialBoceto]);
@@ -978,7 +1047,7 @@ async function ActualizarClienteYDireccion(
     idCliente: number,
     setDirecciones: React.Dispatch<React.SetStateAction<ComboBoxItem[]>>,
     setCargandoDirecciones: React.Dispatch<React.SetStateAction<boolean>>,
-    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>
+    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
 ) {
     // 1. Poner cargando para que el select de direcciones se bloquee
     // 2. Llamar al API para que me retorne las direcciones pero en forma de ComboBoxItem[]
@@ -999,13 +1068,13 @@ async function ActualizarClienteYDireccion(
             id: clienteCompleto.id,
             nombre: clienteCompleto.nombre,
             apellidos: clienteCompleto.apellidos,
-            telefono: clienteCompleto.telefono
-        }
+            telefono: clienteCompleto.telefono,
+        };
 
         setTracking((prev) => ({
             ...prev,
-            cliente: clienteTracking
-        }))
+            cliente: clienteTracking,
+        }));
 
         setCargandoDirecciones(false);
 
@@ -1018,11 +1087,10 @@ async function ActualizarClienteYDireccion(
         // 4. borrar la direccion enlazada del tracking
     } finally {
         setTracking((prev) => ({
-                ...prev,
-                idDireccion: -1,
-                idCliente: idCliente
-            })
-        );
+            ...prev,
+            idDireccion: -1,
+            idCliente: idCliente,
+        }));
     }
 }
 
@@ -1032,7 +1100,7 @@ async function CambiarProveedor(
     tracking: TrackingCompleto,
     trackingBack: TrackingCompleto,
     setMensajeDialog: React.Dispatch<React.SetStateAction<MensajeDialog>>,
-    setMostrarDialog: React.Dispatch<React.SetStateAction<boolean>>
+    setMostrarDialog: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
     // 1. Alertar de todos los posibles casos:
     // 1.1. Si pasa de ML a Aeropost, no poner nada
@@ -1048,7 +1116,8 @@ async function CambiarProveedor(
     if (trackingBack.idProveedor !== idProveedor && idProveedor !== -1 && tracking.ordenEstatus > 1) {
         setMensajeDialog({
             titulo: 'Alerta sobre cambiar de proveedor',
-            descripcion: 'Si cambia el proveedor con el que prealertó y después guarda los cambios, se va a borrar la prealerta del proveedor anterior.'
+            descripcion:
+                'Si cambia el proveedor con el que prealertó y después guarda los cambios, se va a borrar la prealerta del proveedor anterior.',
         });
 
         setMostrarDialog(true);
@@ -1056,7 +1125,7 @@ async function CambiarProveedor(
 
     setTracking((prev) => ({
         ...prev,
-        idProveedor: idProveedor
+        idProveedor: idProveedor,
     }));
 
     // PSTD: Si hay un cambio del proveedor y esta en otro estado != SPR(1) o PDO(2), hay que cambiarlo a PDO
@@ -1065,10 +1134,9 @@ async function CambiarProveedor(
             ...prev,
             ordenEstatus: 2,
             estatus: 'Prealertado',
-            ordenEstatusSincronizado: 2
+            ordenEstatusSincronizado: 2,
         }));
     }
-
 
     // 1.3. Si no ponen ningun proveedor:
 
@@ -1082,63 +1150,106 @@ async function CambiarProveedor(
             errores: [
                 {
                     name: 'idProveedor',
-                    message: 'Ya hay una prealerta registrada con el proveedor: ' + prev.nombreProveedor + '. Indicar proveedor o dejar el anterior.'
-                }
-            ]
+                    message: 'Ya hay una prealerta registrada con el proveedor: ' + prev.nombreProveedor + '. Indicar proveedor o dejar el anterior.',
+                },
+            ],
         }));
     } else {
         setTracking((prev) => ({
             ...prev,
-            errores: []
+            errores: [],
         }));
     }
-
 }
 
 function AgregarArchivoSeleccionado(
+    tracking: TrackingCompleto,
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
-    event: React.ChangeEvent<HTMLInputElement>
-    ){
+    event: React.ChangeEvent<HTMLInputElement>,
+) {
     // # Funcion para agregar los archivos seleccionados a la galeria de archivos del tracking
 
     const file = event.target.files?.[0];
 
-    if(!file) return;
+    if (!file) return;
+
+    // Obtener el idUnico de imagen
+    let idUnico: number = -1;
+
+    for (const img of tracking.imagenes) {
+        console.log(img);
+        if (img.id == idUnico) idUnico--;
+    }
 
     const imagen: Imagen = {
-        id: 1,
+        id: idUnico,
         archivo: file,
-        archivoPropio: true
-    }
+        archivoPropio: true,
+    };
+
     if (file) {
         setTracking((prev) => ({
             ...prev,
-            imagenes: [...prev.imagenes, imagen]
-        }))
+            imagenes: [...prev.imagenes, imagen],
+        }));
     }
-
-
 }
 
-function ContactarCliente(trackingFront: TrackingCompleto){
+function ContactarCliente(trackingFront: TrackingCompleto) {
     // 1. Se le envia a otra persaña para conversar con el cliente
     // 2. En el mensaje se pone un mensaje predefinido
 
-    try{
+    try {
         // Limpiamos el número (por si viene con espacios o +)
         const telefono: string = String(trackingFront.cliente.telefono);
-        const numero = telefono.replace(/\D/g, "");
+        const numero = telefono.replace(/\D/g, '');
         const url = `https://wa.me/506${numero}`; // o sin 506 si ya viene con código país
 
-        window.open(url, "_blank"); // abre en una nueva pestaña
+        window.open(url, '_blank'); // abre en una nueva pestaña
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    }catch (e) {
+    } catch (e) {
         ErrorModal('Error al contactar cliente', 'Hubo un error al contactar el cliente. Vuelve a intentarlo o contacta al soporte TI');
     }
 }
 
-function ActualizarTracking(trackingFront: TrackingCompleto){
+async function ActualizarTrackingAux(trackingFront: TrackingCompleto) {
     // 1. Verificar el estado actual del tracking dicho por el trabajador
     // 2. Dependiendo del estado actual, se hacen las validaciones necesarias para saber si se puede guardar o no
 
+    try {
+        await ActualizarTracking(trackingFront);
+        ExitoModal('Actualización Exitosa', 'Se actualizó el tracking correctamente.')
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+        ErrorModal('Error al actualizar tracking', 'Hubo un error a lactualizar el tracking. Intentelo de nuevo o contacte el soporte de TI');
+    }
+}
+
+async function IngresoFactura(
+    setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
+    tracking: TrackingCompleto,
+    setGuardandoFactura: React.Dispatch<React.SetStateAction<boolean>>,
+    event,
+) {
+    // 1. Se va a ingresar a setTracking
+    // 2. Se va a actualizar el estado como FDO
+    setGuardandoFactura(true);
+
+    try {
+        const factura = event.target.files?.[0];
+        const trackingParam: TrackingCompleto = {
+            ...tracking,
+            factura: factura,
+            ordenEstatus: 8,
+        };
+        const trackingRespuesta: TrackingCompleto = await SubirFactura(trackingParam);
+        setTracking(trackingRespuesta);
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+        console.log(e);
+        ErrorModal('Error al subir la factura', 'Hubo un error la factura del tracking. Vuelvalo a intentarlo o contacte con soporte TI.');
+    } finally {
+        setGuardandoFactura(false);
+    }
 }

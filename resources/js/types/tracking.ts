@@ -67,6 +67,7 @@ export interface TrackingCompleto extends TrackingBase, ErroresInputs {
 
     cliente: ClienteTracking;
     imagenes: Imagen[];
+    factura: File | string | null;
 }
 
 
