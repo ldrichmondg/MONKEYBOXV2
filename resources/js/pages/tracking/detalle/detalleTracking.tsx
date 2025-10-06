@@ -59,6 +59,8 @@ import {
     AccionSinPrealertar
 } from '@/pages/tracking/detalle/detalleTrackingFuncionesAux';
 import { Imagen } from '@/types/imagenes';
+import { ClienteCompleto, ClienteTracking } from '@/types/cliente';
+import { ObtenerCliente } from '@/api/clientes/cliente';
 
 interface Props {
     tracking: TrackingCompleto;
@@ -82,34 +84,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     }
 ];
 
-const buttons: ButtonHeader[] = [
-    {
-        id: 'sincronizarCambios',
-        name: 'Sincronizar Cambios',
-        className: 'bg-orange-400 text-white hover:bg-orange-500 ',
-        isActive: true,
-        onClick: () => {
-        },
-        icon: RotateCcw
-    },
-    {
-        id: 'contactarCliente',
-        name: 'Contactar Cliente',
-        className: 'bg-green-400 text-white hover:bg-green-300 ',
-        isActive: true,
-        onClick: () => {
-        },
-        icon: WhatsappIcon
-    },
-    {
-        id: 'guardarCambios',
-        name: 'Guardar cambios',
-        className: 'bg-red-400 text-white hover:bg-red-300 ',
-        isActive: true,
-        onClick: () => {
-        }
-    }
-];
 
 export default function DetalleTracking({ tracking, clientes, direcciones }: Props) {
     const [proveedores, setProveedores] = useState<ComboBoxItem[]>([]);
@@ -124,7 +98,35 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
 
     //variables de archivos
     const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const [imagenesTracking, setImagenesTracking] =  useState<Imagen[]>([]);
+
+    //variables de header
+    const buttons: ButtonHeader[] = [
+        {
+            id: 'sincronizarCambios',
+            name: 'Sincronizar Cambios',
+            className: 'bg-orange-400 text-white hover:bg-orange-500 ',
+            isActive: true,
+            onClick: () => {
+            },
+            icon: RotateCcw
+        },
+        {
+            id: 'contactarCliente',
+            name: 'Contactar Cliente',
+            className: 'bg-green-400 text-white hover:bg-green-300 ',
+            isActive: !cargandoDirecciones,
+            onClick: () => ContactarCliente(trackingFront),
+            icon: WhatsappIcon
+        },
+        {
+            id: 'guardarCambios',
+            name: 'Guardar cambios',
+            className: 'bg-red-400 text-white hover:bg-red-300 ',
+            isActive: true,
+            onClick: () => ActualizarTracking(trackingFront)
+        }
+    ];
+
 
     useEffect(() => {
         cargarProveedores(setProveedores);
@@ -434,10 +436,10 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                             type="file"
                                             accept="image/*"
                                             ref={fileInputRef}
-                                            onChange={(event) => AgregarArchivoSeleccionado(setTracking, setImagenesTracking, event)}
+                                            onChange={(event) => AgregarArchivoSeleccionado(setTracking, event)}
                                             hidden
                                         />
-                                        {imagenesTracking.map((imagen) => (
+                                        {trackingFront.imagenes.map((imagen) => (
                                             <div className={'relative h-40 w-40 flex-shrink-0'}>
                                                 <img
                                                     src={URL.createObjectURL(imagen.archivo)}
@@ -449,8 +451,10 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                                     <Button
                                                         className="absolute top-1 right-1 bg-opacity-50  py-1 rounded size-8 bg-orange-400 px-5 text-sm text-white hover:bg-orange-500"
                                                         onClick={() => {
-                                                            console.log('Prueba')
-                                                            setImagenesTracking( (prev) => prev.filter( (img) => img.id !== imagen.id))
+                                                            setTracking((prev) => ({
+                                                                ...prev,
+                                                                imagenes: prev.imagenes.filter( (img) => img.id !== imagen.id)
+                                                            }))
                                                         }}
                                                     >
                                                         <Trash />
@@ -978,7 +982,9 @@ async function ActualizarClienteYDireccion(
 ) {
     // 1. Poner cargando para que el select de direcciones se bloquee
     // 2. Llamar al API para que me retorne las direcciones pero en forma de ComboBoxItem[]
-    // 3. borrar la direccion enlazada del tracking y agregar el idCliente
+    // 3. Actualizar el cliente de tracking para tener el # de tel
+    // 4. borrar la direccion enlazada del tracking y agregar el idCliente
+
     try {
         // 1. Poner cargando para que el select de direcciones se bloquee
         setCargandoDirecciones(true);
@@ -987,14 +993,29 @@ async function ActualizarClienteYDireccion(
         const direccionesComboboxItems: ComboBoxItem[] = await comboboxDirecciones(idCliente);
         setDirecciones(direccionesComboboxItems);
 
+        // 3. Actualizar el cliente de tracking para tener el # de tel
+        const clienteCompleto: ClienteCompleto = await ObtenerCliente(idCliente);
+        const clienteTracking: ClienteTracking = {
+            id: clienteCompleto.id,
+            nombre: clienteCompleto.nombre,
+            apellidos: clienteCompleto.apellidos,
+            telefono: clienteCompleto.telefono
+        }
+
+        setTracking((prev) => ({
+            ...prev,
+            cliente: clienteTracking
+        }))
+
         setCargandoDirecciones(false);
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         // si hay un error, hay que mostrar direcciones vacias y el tracking actualizarlo con idDireccion nulo
         ErrorModal('Error al cargar las direcciones', 'Hubo un error al cargar las direcciones');
         setDirecciones([]);
 
-        // 3. borrar la direccion enlazada del tracking
+        // 4. borrar la direccion enlazada del tracking
     } finally {
         setTracking((prev) => ({
                 ...prev,
@@ -1076,7 +1097,6 @@ async function CambiarProveedor(
 
 function AgregarArchivoSeleccionado(
     setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>,
-    setImagenesTracking: React.Dispatch<React.SetStateAction<Imagen[]>>,
     event: React.ChangeEvent<HTMLInputElement>
     ){
     // # Funcion para agregar los archivos seleccionados a la galeria de archivos del tracking
@@ -1091,8 +1111,34 @@ function AgregarArchivoSeleccionado(
         archivoPropio: true
     }
     if (file) {
-        setImagenesTracking((prev) => ([...prev, imagen])); // Crea URL temporal para vista previa
+        setTracking((prev) => ({
+            ...prev,
+            imagenes: [...prev.imagenes, imagen]
+        }))
     }
 
+
+}
+
+function ContactarCliente(trackingFront: TrackingCompleto){
+    // 1. Se le envia a otra persaña para conversar con el cliente
+    // 2. En el mensaje se pone un mensaje predefinido
+
+    try{
+        // Limpiamos el número (por si viene con espacios o +)
+        const telefono: string = String(trackingFront.cliente.telefono);
+        const numero = telefono.replace(/\D/g, "");
+        const url = `https://wa.me/506${numero}`; // o sin 506 si ya viene con código país
+
+        window.open(url, "_blank"); // abre en una nueva pestaña
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    }catch (e) {
+        ErrorModal('Error al contactar cliente', 'Hubo un error al contactar el cliente. Vuelve a intentarlo o contacta al soporte TI');
+    }
+}
+
+function ActualizarTracking(trackingFront: TrackingCompleto){
+    // 1. Verificar el estado actual del tracking dicho por el trabajador
+    // 2. Dependiendo del estado actual, se hacen las validaciones necesarias para saber si se puede guardar o no
 
 }

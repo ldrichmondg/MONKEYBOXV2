@@ -8,7 +8,7 @@ import { Head } from '@inertiajs/react';
 import React from 'react';
 import { TrackingCompleto } from '@/types/tracking';
 import { Spinner } from '@/ownComponents/spinner';
-import { ActualizarUsuario } from '@/api/usuario/usuario';
+import { ActualizarUsuario, RegistrarUsuario } from '@/api/usuario/usuario';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { ExitoModal } from '@/ownComponents/modals/exitoModal';
 
@@ -155,8 +155,12 @@ async function RegistrararUsuarioAux(usuario: UsuarioCompleto, setUsuario: React
 
     try{
         setRegistrando(true);
-        setUsuario(await ActualizarUsuario(usuario));
-        ExitoModal('Registro exitoso', 'Se regustró el usuario exitosamente.');
+        const usuarioRespuesta = await RegistrarUsuario(usuario);
+        setUsuario(usuarioRespuesta);
+        if (usuarioRespuesta.errores.length == 0) {
+            ExitoModal('Registro exitoso', 'Se registró el usuario exitosamente.');
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     }catch (e) {
         ErrorModal('Error al registrar usuario', 'Hubo un error al registrar el usuario. Vuelve a intentarlo o contacta a soporte TI.')

@@ -3,10 +3,10 @@
 
 Estimado/a {{$nombre}}.
 
-¡Bienvenido al sistema MonkeyBox!  
-Estamos encantados de tenerte como parte de nuestro equipo. 
-Para comenzar, te invitamos a registrarte en nuestro sistema 
-de administración de trackings en el siguiente enlace: <a href="http://127.0.0.1:8000/">Link al Sistema</a>.
+¡Bienvenido al sistema MonkeyBox!
+Estamos encantados de tenerte como parte de nuestro equipo.
+Para comenzar, te invitamos a registrarte en nuestro sistema
+de administración de trackings en el siguiente enlace: <a href="{{ config('app.url') }}">Link al Sistema</a>.
 
 Tus credenciales son las siguientes:
 <ul>

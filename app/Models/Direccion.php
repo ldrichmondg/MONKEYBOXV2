@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Diccionarios;
+use App\Helpers\Diccionarios;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 

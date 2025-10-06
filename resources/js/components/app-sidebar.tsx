@@ -15,8 +15,8 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'clientes',
-        href: '/clientes',
-        icon: BriefcaseBusiness ,
+        href: route('usuario.cliente.consulta.vista'),
+        icon: BriefcaseBusiness,
     },
     {
         title: 'usuarios',

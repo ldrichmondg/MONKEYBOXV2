@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Diccionarios;
+use App\Helpers\Diccionarios;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -135,5 +135,9 @@ class Tracking extends Model
             ->sortByDesc('created_at')
             ->first();
         return $ultimoHistorial ? $ultimoHistorial->created_at : null;
+    }
+
+    public function imagenes(): HasMany{
+        return $this->hasMany(Imagen::class, 'IDTRACKING', 'id');
     }
 }

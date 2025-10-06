@@ -17,8 +17,10 @@ class ServicioParcelsApp
         // Se obtiene el tracking si antes se habia consultado, pero generalmente se consigue solo el UUID
         // se retorna null si hubo un problema o el tracking en sí no lo encontro/existe
         try {
+            Log::info('[SPA,OT] Pasa1');
             $apiKey = env('PARCELSAPP_API_KEY');
             $urlSeguimiento = env('PARCELSAPP_URL_SEGUIMIENTO');
+            Log::info('[SPA,OT] apikey: '.$apiKey. ' urlSeg: '.$urlSeguimiento);
             $datosRespuesta = [];
             // Datos del envío
             $envios = [
@@ -103,7 +105,7 @@ class ServicioParcelsApp
             if ($respuesta->successful()) {
                 // Convertir la respuesta a array
                 $datosRespuesta = $respuesta->json();
-                
+
                 if ($datosRespuesta['done']) {
                     return ['estado' => 'Seguimiento completo', 'datos' => $datosRespuesta];
                 } else {
@@ -176,10 +178,10 @@ class ServicioParcelsApp
                 }
                 $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
                 ServicioParcelsApp::GuardarHistorialesRecientes($respuestaObjeto,$tracking);
-          
+
             }
         }
-      
+
     }
     public static function GuardarHistorialesRecientes($dataParcelsApp, Tracking $tracking): void
     {

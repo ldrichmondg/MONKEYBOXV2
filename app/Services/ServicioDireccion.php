@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Resources\TrackingConsultadosTableResource;
 use App\Models\Direccion;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -29,5 +30,11 @@ class ServicioDireccion
 
         return $direcciones;
 
+    }
+
+    public static function ConsultaTrackings(int $idDireccion): Collection{
+
+        $direccion = Direccion::findOrFail($idDireccion);
+        return $direccion->trackings;
     }
 }

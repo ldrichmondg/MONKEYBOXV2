@@ -35,11 +35,14 @@ class UsuarioController extends Controller
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
-            return redirect()->route('welcome')
+            return redirect()->route('dashboard')
                 ->with('error', 'Hubo un error al cargar la consulta de usuarios.');
         }
     }
 
+    /**
+     * @return JsonResponse
+     */
     public function ConsultaJson(): JsonResponse
     {
         try {
@@ -47,7 +50,7 @@ class UsuarioController extends Controller
             return response()->json( ['usuarios' => UsuarioConsultaResource::collection($usuarios)->resolve()]);
 
         } catch (Exception $e) {
-            Log::error('[TrackingController->ConsultaVista] error:' . $e);
+            Log::error('[UsuarioController->ConsultaVista] error:' . $e);
             return response()->error('Hubo un error al solicitar los usuarios');
         }
     }
@@ -66,6 +69,7 @@ class UsuarioController extends Controller
             return response()->error('Hubo un error al eliminar usuario');
         }
     }
+
     /**
      * @param int $id
      * @return Response|RedirectResponse
@@ -90,7 +94,7 @@ class UsuarioController extends Controller
     public function ActualizaJson(RequestActualizarUsuario $request): JsonResponse{
 
         try{
-            ServicioUsuario::Actualizar($request->id, $request->nombre, $request->apellidos, $request->telefono, $request->correo, $request->empresa);
+            ServicioUsuario::Actualizar($request->id, $request->nombre, $request->apellidos, $request->telefono, $request->correo, $request->empresa, $request->cedula);
             return response()->json(['Exito'],200);
         }catch (Exception $e){
             return response()->error('Hubo un error al actualizar usuario');
@@ -109,15 +113,15 @@ class UsuarioController extends Controller
     }
 
     /**
-     * @param RequestActualizarUsuario $request
+     * @param RequestRegistrarUsuario $request
      * @return JsonResponse
      */
     public function RegistroJson(RequestRegistrarUsuario $request): JsonResponse{
-
         try{
-            ServicioUsuario::Actualizar($request->id, $request->nombre, $request->apellidos, $request->telefono, $request->correo, $request->empresa);
+            ServicioUsuario::Registrar($request->nombre, $request->apellidos, $request->telefono, $request->correo, $request->empresa, $request->cedula);
             return response()->json(['Exito'],200);
         }catch (Exception $e){
+            Log::info($e->getMessage());
             return response()->error('Hubo un error al actualizar usuario');
         }
     }

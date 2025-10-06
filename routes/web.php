@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DireccionController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
@@ -8,9 +9,7 @@ use Inertia\Inertia;
 // Nomenclatura a usar:
 // /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

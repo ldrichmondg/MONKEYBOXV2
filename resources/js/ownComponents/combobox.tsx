@@ -53,7 +53,7 @@ export function Combobox( {items = [], placeholder, classNames = '', onChange, i
                 </Button>
             </PopoverTrigger>
             <p className='text-red-400'>{error?.message}</p>
-            <PopoverContent className="w-[200px] p-0">
+            <PopoverContent className="w-[200px] p-0" asChild>
                 <Command>
                     <CommandInput placeholder={placeholder} className="h-9" />
                     <CommandList>

@@ -33,10 +33,10 @@ export function Buttons({ buttons = [], classNameContainer = '' }: { buttons?: B
         return () => observer.disconnect();
     }, []);
 
-    const buttonsHtml = buttons.map((item) => (
+    const buttonsHtml = buttons.map((item,index) => (
         <Button
-
-            id={item.id + "-button"}
+            key={index + "-button"}
+            id={index + "-button"}
             className={item.className}
             size="sm"
             disabled={!item.isActive}
@@ -53,10 +53,10 @@ export function Buttons({ buttons = [], classNameContainer = '' }: { buttons?: B
         </Button>
     ));
 
-    const buttonsDropdownHtml = buttons.map((item) => (
+    const buttonsDropdownHtml = buttons.map((item,index) => (
         <Button
-
-            id={item.id}
+            key={index + '-buttonDropdown'}
+            id={index + '-buttonDropdown'}
             className={item.className + ' w-full justify-start'}
             size="sm"
             disabled={!item.isActive}

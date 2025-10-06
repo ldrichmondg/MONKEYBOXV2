@@ -53,8 +53,8 @@ export async function ActualizarUsuario(usuario: UsuarioCompleto): Promise<Usuar
         const errorResponse: ResponseError = await response.json(); //no retorna nada porque es actualizar, pero si retorna, son errores
         errorResponse.httpStatus = response.status;
 
-        await administracionErrores(errorResponse, "Error al eliminar la prealerta", false);
-        throw new AppError(errorResponse.errorApp , response.status, "Error al eliminar la prealerta", errorResponse.titleMessage);
+        await administracionErrores(errorResponse, "Error al actualizar usuario", false);
+        throw new AppError(errorResponse.errorApp , response.status, "Error al actualizar usuario", errorResponse.titleMessage);
     }
 
     // Si llegó acá es que t#do bien
@@ -66,7 +66,7 @@ export async function ActualizarUsuario(usuario: UsuarioCompleto): Promise<Usuar
 export async function RegistrarUsuario(usuario: UsuarioCompleto): Promise<UsuarioCompleto>{
     // 1. Enviar la data del usuario como un PUT
 
-    const response = await fetch(route('usuario.usuario.actualiza.json'), {
+    const response = await fetch(route('usuario.usuario.registro.json'), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -85,8 +85,8 @@ export async function RegistrarUsuario(usuario: UsuarioCompleto): Promise<Usuari
         const errorResponse: ResponseError = await response.json(); //no retorna nada porque es actualizar, pero si retorna, son errores
         errorResponse.httpStatus = response.status;
 
-        await administracionErrores(errorResponse, "Error al eliminar la prealerta", false);
-        throw new AppError(errorResponse.errorApp , response.status, "Error al eliminar la prealerta", errorResponse.titleMessage);
+        await administracionErrores(errorResponse, "Error al registrar usuario", false);
+        throw new AppError(errorResponse.errorApp , response.status, "Error al registrar usuario", errorResponse.titleMessage);
     }
 
     // Si llegó acá es que t#do bien

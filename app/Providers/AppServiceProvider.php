@@ -23,13 +23,26 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // - Se usa para estandarizar los errores que su respuesta es unicamente JSON
-        Response::macro('error', function ($message, $titleMessage = 'Error', $code = 500, $errorApp = EnumCodigosAppError::ERROR_INTERNO) {
-            return response()->json([
+        Response::macro('error', function (
+            $message,
+            $titleMessage = 'Error',
+            $code = 500,
+            $errorApp = EnumCodigosAppError::ERROR_INTERNO,
+            $data = null) {
+
+            $response = [
                 'status' => 'error',
                 'message' => $message,
                 'titleMessage' => $titleMessage,
                 'errorApp' => $errorApp,
-            ], $code);
+            ];
+
+            // Solo agregamos data si viene definido
+            if (!is_null($data)) {
+                $response['data'] = $data;
+            }
+
+            return response()->json($response, $code);
         });
     }
 }

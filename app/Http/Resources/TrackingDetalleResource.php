@@ -16,10 +16,11 @@ class TrackingDetalleResource extends JsonResource
     {
         $idProveedor = optional($this->trackingProveedor)->IDPROVEEDOR;
         $nombreProveedor = optional(optional($this->trackingProveedor)->proveedor)->NOMBRE;
+        $cliente = $this->direccion->cliente;
         return [
             'id' => $this->id,
             'idTracking' => $this->IDTRACKING,
-            'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
+            'nombreCliente' => $cliente->usuario->nombreCompletoDosApellidos(),
             'desde' => empty($this->DESDE) ? 'N/A' : $this->DESDE,
             'hasta' => empty($this->HASTA) ? 'N/A' : $this->HASTA,
             'destino' => empty($this->DESTINO) ? 'N/A' : $this->DESTINO,
@@ -28,7 +29,7 @@ class TrackingDetalleResource extends JsonResource
             'peso' => $this->PESO,
             'idProveedor' => $idProveedor == null ? -1 : $idProveedor,
             'nombreProveedor' => $nombreProveedor,
-            'idCliente' => $this->direccion->cliente->id,
+            'idCliente' => $cliente->id,
             'idDireccion' => $this->direccion->id,
             'observaciones' => empty($this->OBSERVACIONES) ? '' : $this->OBSERVACIONES,
             'estatus' => $this->ESTADOMBOX,
@@ -39,6 +40,8 @@ class TrackingDetalleResource extends JsonResource
             'trackingProveedor' => optional($this->trackingProveedor)->TRACKINGPROVEEDOR,
             'valorPrealerta' => optional(optional($this->trackingProveedor)->prealerta)->VALOR !== null ? $this->trackingProveedor->prealerta->VALOR : 1.5,
             'descripcion' => optional(optional($this->trackingProveedor)->prealerta)->DESCRIPCION !== null ? $this->trackingProveedor->prealerta->DESCRIPCION : '',
+            'cliente' => (new DetalleClienteTrackingResource($cliente))->resolve(),
+            'imagenes' => []
             ];
     }
 }

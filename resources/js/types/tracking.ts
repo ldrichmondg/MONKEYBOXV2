@@ -3,6 +3,8 @@ import { WithActions, EstatusTable } from './table';
 import { PrealertaBase } from '@/types/prealerta';
 import {ErroresInputs} from '@/types/input';
 import { HistorialTracking } from '@/types/historialTracking';
+import { ClienteTracking } from '@/types/cliente';
+import { Imagen } from '@/types/imagenes';
 
 export interface TrackingBase {
     id: number;
@@ -31,7 +33,6 @@ export interface TrackingRegistroTable extends TrackingTable {
 
 export interface TrackingTable extends TrackingBase, WithActions {
     estatus: EstatusTable;
-
 }
 
 export interface TrackingConProveedor extends TrackingBase {
@@ -63,6 +64,9 @@ export interface TrackingCompleto extends TrackingBase, ErroresInputs {
     diasTransito: number;
     idDireccion: number;
     valorPrealerta: number;
+
+    cliente: ClienteTracking;
+    imagenes: Imagen[];
 }
 
 

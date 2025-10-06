@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\DireccionController;
 use App\Http\Controllers\EstadoMBoxController;
 use App\Http\Controllers\PrealertaController;
 use App\Http\Controllers\ProveedorController;
@@ -56,4 +58,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/usuario/registro/vista', [UsuarioController::class, 'RegistroVista'])->name('usuario.usuario.registro.vista');
     Route::post('/usuario/registro/json', [UsuarioController::class,  'RegistroJson'])->name('usuario.usuario.registro.json');
+});
+
+//RUTAS CLIENTES
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/cliente/consulta/vista', [ClienteController::class, 'ConsultaVista'])->name('usuario.cliente.consulta.vista');
+    Route::get('/cliente/consulta/json', [ClienteController::class, 'ConsultaJson'])->name('usuario.cliente.consulta.json');
+
+    Route::post('/cliente/eliminar/json', [ClienteController::class, 'EliminarJson'])->name('usuario.cliente.eliminar.json');
+
+    Route::get('/cliente/detalle/vista/{id}', [ClienteController::class, 'DetalleVista'])->name('usuario.cliente.detalle.vista');
+    Route::get('/cliente/detalle/json/{id}', [ClienteController::class, 'DetalleJson'])->name('usuario.cliente.detalle.json');
+
+    Route::post('/cliente/actualiza/json', [ClienteController::class, 'ActualizaJson'])->name('usuario.cliente.actualiza.json');
+
+    Route::get('/cliente/registro/vista', [ClienteController::class, 'RegistroVista'])->name('usuario.cliente.registro.vista');
+    Route::post('/cliente/registro/json', [ClienteController::class,  'RegistroJson'])->name('usuario.cliente.registro.json');
+});
+
+//RUTAS DIRECCIONES
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/canton/consulta/json/{id}', [DireccionController::class, 'ConsultaCantonesJson'])->name('usuario.cantones.consulta.json');
+    Route::get('/distrito/consulta/json/{id}', [DireccionController::class, 'ConsultaDistritoJson'])->name('usuario.distrito.consulta.json');
+    Route::get('/distrito/consulta/json/codigoPostal/{id}', [DireccionController::class, 'ConsultaCodigoPostalJson'])->name('usuario.distrito.consulta.codigopostal.json');
+    Route::get('/codigopostal/detalle/json/{codigopostal}', [DireccionController::class, 'DetalleCodigoPostalJson'])->name('usuario.codigopostal.detalle.json');
+
+    Route::post('/direccion/consulta/json/obtenerTrackings', [DireccionController::class, 'ConsultaTrackings'])->name('usuario.direccion.consulta.json.trackings');
+
+    //Route::get('/cliente/consulta/json', [ClienteController::class, 'ConsultaJson'])->name('usuario.cliente.consulta.json');
+    //Route::post('/usuario/registro/json', [UsuarioController::class,  'RegistroJson'])->name('usuario.usuario.registro.json');*/
 });

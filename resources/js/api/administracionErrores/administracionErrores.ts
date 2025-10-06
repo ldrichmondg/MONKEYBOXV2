@@ -8,6 +8,7 @@ export interface ResponseError {
     redirect?: string;
     errorApp: string;
     httpStatus: number;
+    data?: never[];
 }
 export async function administracionErrores(response: Response|ResponseError, errorMensajeTitle: string, enviarModal: boolean = true): Promise<boolean> {
     // 1. Obtener el status request

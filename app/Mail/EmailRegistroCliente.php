@@ -42,7 +42,7 @@ class EmailRegistroCliente extends Mailable
             with: [
                 'nombre' => $this->usuario->NOMBRE,
                 'correo' => $this->usuario->email,
-                'password' => $this->usuario->tempPassword,
+                'password' => $this->cliente->tempPassword,
                 'casillero' => $this->cliente->CASILLERO,
             ],
         );

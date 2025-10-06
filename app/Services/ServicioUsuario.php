@@ -62,9 +62,10 @@ class ServicioUsuario
      * @return void
      * @throws ModelNotFoundException
      */
-    public static function Actualizar(int $idUsuario, string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa): void {
+    public static function Actualizar(int $idUsuario, string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa, int $cedula): void {
 
         $usuario = User::findOrFail($idUsuario);
+        $usuario->CEDULA = $cedula;
         $usuario->NOMBRE = $nombre;
         $usuario->APELLIDOS = $apellidos;
         $usuario->TELEFONO = $telefono;
@@ -82,11 +83,12 @@ class ServicioUsuario
      * @param string|null $empresa
      * @return void
      */
-    public static function Registrar(string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa): void {
+    public static function Registrar(string $nombre, string $apellidos, string $telefono, string $email, string|null $empresa, int $cedula): void {
 
         $pass = Str::random(10);
 
         $usuario = new User();
+        $usuario->CEDULA = $cedula;
         $usuario->NOMBRE = $nombre;
         $usuario->APELLIDOS = $apellidos;
         $usuario->TELEFONO = $telefono;

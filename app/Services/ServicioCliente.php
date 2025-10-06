@@ -4,14 +4,17 @@ namespace App\Services;
 
 use App\DataTransformers\ModelToIdDescripcionDTO;
 use App\Events\EventoRegistroCliente;
+use App\Http\Requests\RequestRegistroCliente;
 use App\Models\Cliente;
 use App\Models\Direccion;
 use App\Models\Enum\TipoCardDirecciones;
 use App\Models\Enum\TipoDirecciones;
+use App\Models\Enum\TipoPerfiles;
 use App\Models\Tracking;
 use App\Models\User;
 use Exception;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,140 +31,83 @@ class ServicioCliente
 
             return ModelToIdDescripcionDTO::map($clientes);
         } catch (Exception $e) {
-            Log::error('[ServicioCliente -> ObtenerClientesSimples] Error: '.$e->getMessage());
+            Log::error('[ServicioCliente -> ObtenerClientesSimples] Error: ' . $e->getMessage());
 
             return [];
         }
     }
 
-    public static function Filtro($request): ?LengthAwarePaginator
+
+    public static function Crear(RequestRegistroCliente $request): Cliente
     {
-        try {
-            $query = $request->input('buscar');
-            // Aquí va tu lógica, por ejemplo:
-            $clientes = Cliente::select('cliente.id', 'CASILLERO', 'IDUSUARIO')
-                ->join('users as u', 'cliente.IDUSUARIO', '=', 'u.id')
-                ->orderBy('u.NOMBRE')
-                ->with('usuario');
 
-            if (! empty($query)) {
+        // contaseña
+        $contraseña = bin2hex(random_bytes(8));
+        $usuario = User::create([
+            'CEDULA' => $request->cedula,
+            'NOMBRE' => $request->nombre,
+            'email' => $request->correo,
+            'password' => $contraseña,
+            'IDPERFIL' => TipoPerfiles::Clientes, // id del cliente
+            'TELEFONO' => $request->telefono,
+            'APELLIDOS' => $request->apellidos,
+        ]);
 
-                $clientes->where(function ($q) use ($query) {
-                    $q->orWhereHas('usuario', function ($subq) use ($query) {
+        $cliente = Cliente::create([
+            'CASILLERO' => $request->casillero,
+            'FECHANACIMIENTO' => $request->fechaNacimiento,
+            'IDUSUARIO' => $usuario->id,
+        ]);
 
-                        $subq->where('CEDULA', 'like', "%{$query}%")
-                            ->orWhere('NOMBRE', 'like', "%{$query}%")
-                            ->orWhere('APELLIDOS', 'like', "%{$query}%")
-                            ->orWhere('TELEFONO', 'like', "%{$query}%")
-                            ->orWhere('email', 'like', "%{$query}%");
-                    });
-                });
-            }
+        $direcciones = $request->input('direcciones');
 
-            return $clientes->paginate(8);
-        } catch (\Throwable $e) {
-            // Opcional: loguear el error
-            Log::error('Error en ServicioCliente::Filtro', ['error' => $e->getMessage()]);
-
-            return null;
+        foreach ($direcciones as $direccion) {
+            Direccion::create([
+                'DIRECCION' => $direccion['direccion'],
+                'TIPO' => $direccion['tipo'],
+                'CODIGOPOSTAL' => $direccion['codigoPostal'],
+                'IDCLIENTE' => $cliente->id,
+                'PAISESTADO' => $direccion['paisEstado'],
+                'LINKWAZE' => $direccion['linkWaze'],
+            ]);
         }
+
+        EventoRegistroCliente::dispatch($cliente, $contraseña);
+        event(new Registered($usuario));
+
+        return $cliente;
+
     }
 
-    public static function Crear($request): ?Cliente
+    /**
+     * @param $request
+     * @return void
+     * @throws ModelNotFoundException
+     */
+    public static function Actualizar($request): void // cambiar esto a datos limpios
     {
-        try {
-
-            // contaseña
-            $contraseña = bin2hex(random_bytes(8));
-            $usuario = User::create([
-                'CEDULA' => $request->cedula,
-                'NOMBRE' => $request->nombre,
-                'email' => $request->email,
-                'password' => $contraseña,
-                'IDPERFIL' => 3, // id del cliente
-                'TELEFONO' => $request->telefono,
-                'APELLIDOS' => $request->apellidos,
-            ]);
-
-            $cliente = Cliente::create([
-                'CASILLERO' => $request->casillero,
-                'FECHANACIMIENTO' => $request->fechaNacimiento,
-                'IDUSUARIO' => $usuario->id,
-            ]);
-
-            $tienePrincipal = false;
-            $direcciones = $request->input('direcciones');
-            // Verificar si ya hay alguna dirección con TIPO 1
-            foreach (array_reverse($request->input('direcciones')) as $direccion) {
-                if ($direccion['tipo'] == 1) {
-                    $tienePrincipal = true;
-                    break;  // No es necesario seguir buscando, ya que encontramos una con tipo 1
-                }
-            }
-            // Si no se encontró una dirección principal, asignar la primera dirección como principal
-            if (! $tienePrincipal && count($request->input('direcciones')) > 0) {
-                $direcciones[0]['tipo'] = 1;  // Asignar TIPO = 1 a la primera dirección
-            }
-
-            foreach ($direcciones as $direccion) {
-                Direccion::create([
-                    'DIRECCION' => $direccion['direccion'],
-                    'TIPO' => $direccion['tipo'],
-                    'CODIGOPOSTAL' => $direccion['codigoPostal'],
-                    'IDCLIENTE' => $cliente->id,
-                    'PAISESTADO' => $direccion['paisEstado'],
-                    'LINKWAZE' => $direccion['linkWaze'],
-                ]);
-            }
-
-            EventoRegistroCliente::dispatch($cliente, $contraseña);
-            event(new Registered($usuario));
-
-            return $cliente;
-        } catch (Exception $e) {
-            // Opcional: loguear el error
-            // var_dump($e, $e->getMessage());
-            Log::error('Error en ServicioCliente::Crear', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    public static function Editar($request)
-    {
-
-        try {
+        DB::transaction(function () use ($request) {
+            Log::info($request->idUsuario);
+            // 1. Actualización del usuario
             $item = User::find($request->idUsuario);
 
             $item->CEDULA = $request->cedula;
             $item->NOMBRE = $request->nombre;
-            $item->email = $request->email;
+            $item->email = $request->correo;
             $item->APELLIDOS = $request->apellidos;
             $item->TELEFONO = $request->telefono;
             $item->save();
 
+            // actualizar cliente
             $cliente = Cliente::where('IDUSUARIO', $request->idUsuario)->first();
             $cliente->CASILLERO = $request->casillero;
+            $cliente->FECHANACIMIENTO = $request->fechaNacimiento;
             $cliente->save();
 
-            $tienePrincipal = false;
-
-            // Verificar si ya hay alguna dirección con TIPO 1
-            foreach (array_reverse($request->input('direcciones')) as $direccion) {
-                if ($direccion['TIPO'] == 1) {
-                    $tienePrincipal = true;
-                    break;  // No es necesario seguir buscando, ya que encontramos una con tipo 1
-                }
-            }
-
-            // Direccion::where('IDCLIENTE', $cliente->id)->delete();
-
+            // Actualizar direcciones
             $direcciones = $request->input('direcciones');
-            // Si no se encontró una dirección principal, asignar la primera dirección como principal
-            if (! $tienePrincipal && count($direcciones) > 0) {
-                $direcciones[0]['TIPO'] = 1;  // Asignar TIPO = 1 a la primera dirección
-            }
 
+            //ver cuales direcciones tienen ids positivos, porque esos no son nuevos
             foreach ($direcciones as $dir) {
                 $id = $dir['id'];
 
@@ -173,25 +119,26 @@ class ServicioCliente
 
                     if ($direccion) {
                         $direccion->update([
-                            'DIRECCION' => $dir['DIRECCION'],
-                            'TIPO' => $dir['TIPO'],
-                            'CODIGOPOSTAL' => $dir['CODIGOPOSTAL'],
+                            'DIRECCION' => $dir['direccion'],
+                            'TIPO' => $dir['tipo'],
+                            'CODIGOPOSTAL' => $dir['codigoPostal'],
                             'IDCLIENTE' => $cliente->id,
-                            'PAISESTADO' => $dir['PAISESTADO'],
-                            'LINKWAZE' => $dir['LINKWAZE'],
+                            'PAISESTADO' => $dir['paisEstado'],
+                            'LINKWAZE' => $dir['linkWaze'],
                         ]);
                         $idsExistentes[] = $direccion->id;
                     }
                 } else {
-                    $nueva = $cliente->direcciones()->create([
-                        'DIRECCION' => $dir['DIRECCION'],
-                        'TIPO' => $dir['TIPO'],
-                        'CODIGOPOSTAL' => $dir['CODIGOPOSTAL'],
+                    // son direcciones nuevas
+                    $nuevaDireccion = $cliente->direcciones()->create([
+                        'DIRECCION' => $dir['direccion'],
+                        'TIPO' => $dir['tipo'],
+                        'CODIGOPOSTAL' => $dir['codigoPostal'],
                         'IDCLIENTE' => $cliente->id,
-                        'PAISESTADO' => $dir['PAISESTADO'],
-                        'LINKWAZE' => $dir['LINKWAZE'],
+                        'PAISESTADO' => $dir['paisEstado'],
+                        'LINKWAZE' => $dir['linkWaze'],
                     ]);
-                    $idsExistentes[] = $nueva->id;
+                    $idsExistentes[] = $nuevaDireccion->id;
                 }
             }
 
@@ -199,17 +146,7 @@ class ServicioCliente
             $cliente->direcciones()
                 ->whereNotIn('id', $idsExistentes)
                 ->delete();
-
-            return $cliente;
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            exit();
-
-            return [
-                'state' => 'Error',
-                'mensaje' => 'Hubo un error al actualizar el usuario',
-            ];
-        }
+        });
     }
 
     public function CalcularDashboardCliente()
@@ -235,7 +172,7 @@ class ServicioCliente
                 'clientes_mes_pasado' => round($porcentajeClientesMesPasado, 2),
             ];
         } catch (Exception $e) {
-            throw new \Exception('Error al calcular los clientes: '.$e->getMessage());
+            throw new \Exception('Error al calcular los clientes: ' . $e->getMessage());
         }
     }
 
@@ -255,7 +192,7 @@ class ServicioCliente
 
             return $clientesPorMes;
         } catch (\Exception $e) {
-            throw new \Exception('Error al calcular los clientes por meses: '.$e->getMessage());
+            throw new \Exception('Error al calcular los clientes por meses: ' . $e->getMessage());
         }
     }
 
@@ -281,7 +218,7 @@ class ServicioCliente
         } catch (Exception $e) {
             var_dump($e->getMessage());
             exit();
-            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
 
             return null;
         }
@@ -296,7 +233,7 @@ class ServicioCliente
 
             return $paisesEstado->distinct()->get();
         } catch (Exception $e) {
-            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
 
             return null;
         }
@@ -333,12 +270,12 @@ class ServicioCliente
 
             // Eliminar duplicados basados en PAISESTADO, CODIGOPOSTAL y DIRECCION
             return $direcciones->unique(function ($item) {
-                return $item['PAISESTADO'].'|'.$item['CODIGOPOSTAL'].'|'.$item['DIRECCION'];
+                return $item['PAISESTADO'] . '|' . $item['CODIGOPOSTAL'] . '|' . $item['DIRECCION'];
             })->values();
         } catch (Exception $e) {
             var_dump($e->getMessage());
 
-            Log::error('Error al obtener la lista de direcciones del mapa: '.$e->getMessage());
+            Log::error('Error al obtener la lista de direcciones del mapa: ' . $e->getMessage());
 
             return null;
         }
@@ -358,9 +295,48 @@ class ServicioCliente
 
         } catch (Exception $e) {
 
-            Log::error('[ServicioCliente->ObtenerCliente] error:'.$e);
+            Log::error('[ServicioCliente->ObtenerCliente] error:' . $e);
 
             return null;
         }
+    }
+
+    public static function Eliminar(int $idCliente): array{
+        // 1. Validar que no hayan paquetes != a Pagado
+        // 1.1 Si hay paquetes no se puede eliminar, tirar error pero enviamos los trackings enlazados
+        // 2. Si t#do OK, eliminarlo
+        $cliente = Cliente::findOrFail($idCliente);
+        $direcciones = $cliente->direcciones;
+        $usuario = $cliente->usuario;
+        $hayTrackingsEnProceso = false;
+        $trackingsEnProceso = [];
+
+        Log::info('PASA2');
+        // 1. Validar que no hayan paquetes != a Pagado
+        foreach($direcciones as $direccion){
+            $trackings = $direccion->trackings;
+
+            foreach($trackings as $tracking){
+                if($tracking->ESTADOMBOX != 'Facturado'){
+                    Log::info('ENTRO');
+                    $hayTrackingsEnProceso = true;
+                    $trackingsEnProceso[] = $tracking;
+                    break;
+                }
+            }
+
+            if($hayTrackingsEnProceso) break;
+
+        }
+
+        Log::info('PASA3');
+        if($hayTrackingsEnProceso){
+            Log::info(json_encode($trackingsEnProceso));
+            return $trackingsEnProceso;
+        }
+
+        //$usuario->delete();
+        //$cliente->delete();
+        return [];
     }
 }
