@@ -14,6 +14,7 @@ use App\Exceptions\ExceptionEstadoNotFound;
 use App\Exceptions\ExceptionPrealertaNotFound;
 use App\Exceptions\ExceptionTrackingProveedorNotFound;
 use App\Http\Requests\RequestActualizarEstado;
+use App\Http\Requests\RequestActualizarTracking;
 use App\Http\Requests\RequestActualizarTrackingEliminarFactura;
 use App\Http\Requests\RequestActualizarTrackingSubirFactura;
 use App\Http\Requests\RequestTrackingRegistro;
@@ -26,6 +27,7 @@ use App\Models\Tracking;
 use App\Models\TrackingHistorial;
 use DateTime;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -333,7 +335,7 @@ class ServicioTracking
      * @throws ExceptionAPRequestEliminarPrealerta
      * @throws ExceptionAPRequestActualizarPrealerta
      */
-    public static function ComparacionEstados($request){
+    public static function ComparacionEstados(RequestActualizarTracking $request){
         // -Comparacion de estados
         // 1. Ver el estado que trae por el usuario y obtener el trackingViejo
         // 1.1. Si el estado se mantiene SPR pero con idProveedor, valor, descripcion: crear prealerta
@@ -455,5 +457,55 @@ class ServicioTracking
 
         $tracking->save();
         return $tracking;
+    }
+
+    /**
+     * @param RequestActualizarTracking $request
+     * @return Tracking
+     * @throws FALTA
+     */
+    public static function ActualizarSincronizar(RequestActualizarTracking $request): Tracking{
+        // 1. Primero hay que actualizar el tracking para que esté justo como lo digitó el usuario
+        // 2. Obtener el estado sincronizado actual del tracking
+        // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
+        // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+
+        // 1. Primero hay que actualizar el tracking para que esté justo como lo digitó el usuario
+        self::ActualizarTracking($request);
+
+        // 2. Obtener el estado sincronizado actual del tracking
+        // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
+        // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+        return self::Sincronizar($request->id);
+    }
+
+    /**
+     * @param int $idTracking
+     * @return Tracking
+     * @throws ModelNotFoundException
+     * @throws FALTA
+     */
+    public static function Sincronizar(int $idTracking): Tracking{
+        // 2. Obtener el estado sincronizado actual del tracking
+        // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
+        // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+
+        return DB::transaction(function () use ($idTracking) {
+            // 2. Obtener el estado sincronizado actual del tracking
+            $tracking = Tracking::findOrFail($idTracking);
+
+            // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
+            if ($tracking->ESTADOSINCRONIZADO == 'Sin Prealertar' || $tracking->ESTADOSINCRONIZADO == 'Prealertado'){
+                ServicioParcelsApp::ProcesarTrackingsParcelsApp([$tracking->IDTRACKING]);
+
+            }
+            // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+            else{
+
+            }
+
+            $tracking->refresh(); //por si actualizamos tracking o historialesTracking que se actualice los datos al modelo que ya estabamos usando
+            return $tracking;
+        });
     }
 }

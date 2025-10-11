@@ -19,7 +19,6 @@ use App\Models\Tracking;
 use App\Services\ServicioCliente;
 use App\Services\ServicioTracking;
 use Exception;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +26,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use League\Flysystem\FilesystemException;
 
 // Nomenclatura a usar:
 // SubmoduloAccion (recursoID)
@@ -107,7 +105,9 @@ class TrackingController
     public function Detalle(int $id): Response|RedirectResponse // tengo que poner un request para verificar que el id del tracking existe
     {
         try {
-            $tracking = Tracking::with('historialesT')->findOrFail($id);
+            $tracking = ServicioTracking::Sincronizar($id);
+            $tracking->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
+
             $direcciones = ModelToIdDescripcionDTO::map(Direccion::where('IDCLIENTE', $tracking->direccion->cliente->id)->get());
 
             return Inertia::render('tracking/detalle/detalleTracking', ['tracking' => (new TrackingDetalleResource($tracking))->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve(), 'direcciones' => $direcciones]);
@@ -150,6 +150,10 @@ class TrackingController
         }
     }
 
+    /**
+     * @param RequestActualizarTrackingSubirFactura $request
+     * @return JsonResponse
+     */
     public function SubirFactura(RequestActualizarTrackingSubirFactura $request): JsonResponse{
         try{
             $trackingActualizado = ServicioTracking::SubirFactura($request);
@@ -162,6 +166,10 @@ class TrackingController
         }
     }
 
+    /**
+     * @param RequestActualizarTrackingEliminarFactura $request
+     * @return JsonResponse
+     */
     public function EliminarFactura(RequestActualizarTrackingEliminarFactura $request): JsonResponse{
         try{
             $trackingActualizado = ServicioTracking::EliminarFactura($request);
@@ -171,6 +179,19 @@ class TrackingController
         }catch (Exception $e){
             Log::info('[TC, SF] error: '. $e->getMessage());
             return response()->error('Hubo un error al eliminar la factura del tracking');
+        }
+    }
+
+    public function Sincronizar(RequestActualizarTracking $request){
+        // Sincronizar cambios que vengan de ParcelsApp o de Aeropost
+
+        try{
+            $tracking = ServicioTracking::Sincronizar($request);
+            $tracking->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
+
+            return response()->json(['tracking' => (new TrackingDetalleResource($tracking))->resolve()]);
+        }catch (Exception $e){
+            Log::info('[TC, Sinc] error: '. $e->getMessage());
         }
     }
 

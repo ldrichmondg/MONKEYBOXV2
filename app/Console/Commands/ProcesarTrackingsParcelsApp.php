@@ -26,14 +26,19 @@ class ProcesarTrackingsParcelsApp extends Command
 
     public function handle()
     {
-        // Obtenemos todos los IDTRACKING del proveedor Aeropost 
-        $trackingProveedorIds = TrackingProveedor::pluck('IDTRACKING');
+        // Filtramos aquellos trackings donde su estado sincronizado sea SPR(1) o PDO(2)
+        /*$listadoPendientes = Tracking::whereIn('ESTADOSINCRONIZADO',['Sin Prealertar','Prealertado'])
+            ->pluck('IDTRACKING')
+            ->toArray();
 
-        // Filtramos listadoPendientes directamente en la consulta
-            $listadoPendientes = Tracking::where()->whereIn('id', $trackingProveedorIds)
-            ->pluck('IDTRACKING');;
+        $this->info("Total pendientes: " . count($listadoPendientes));
 
-        ServicioParcelsApp::ProcesarTrackingsParcelsApp($listadoPendientes->toArray());
+        foreach ($listadoPendientes as $idTracking) {
+            $this->line("Tracking ID: {$idTracking}");
+        }*/
+
+        //ServicioParcelsApp::ProcesarTrackingsParcelsApp($listadoPendientes);
+        ServicioParcelsApp::ProcesarTrackingsParcelsApp(['1Z093A4A0395574965']);
     }
 
 }

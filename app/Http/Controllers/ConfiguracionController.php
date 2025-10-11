@@ -14,7 +14,6 @@ class ConfiguracionController extends Controller
         try {
 
             $config = json_decode(Storage::disk('local')->get('private/configuracion.json'), true);
-
             return response()->json($config);
 
         } catch (\Exception $e) {

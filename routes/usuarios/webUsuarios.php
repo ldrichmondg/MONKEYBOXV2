@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tracking/actualiza/json/subirFactura', [TrackingController::class, 'SubirFactura'])->name('usuario.tracking.actualiza.json.subirfactura');
     Route::post('/tracking/actualiza/json/eliminarFactura', [TrackingController::class, 'EliminarFactura'])->name('usuario.tracking.actualiza.json.eliminarfactura');
 
+    Route::post('/tracking/actualiza/json/sincronizar', [TrackingController::class, 'Sincronizar'])->name('usuario.tracking.actualiza.json.sincronizar');
 });
 
 // RUTAS CONFIGURACION

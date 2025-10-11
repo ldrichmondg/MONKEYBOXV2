@@ -178,7 +178,6 @@ class ServicioParcelsApp
                 }
                 $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
                 ServicioParcelsApp::GuardarHistorialesRecientes($respuestaObjeto,$tracking);
-
             }
         }
 

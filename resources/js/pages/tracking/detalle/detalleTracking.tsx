@@ -21,7 +21,7 @@ import { Box, Calendar, CircleCheck, CircleX, Clock4, FileDown, LucideIcon, More
 import React, { useEffect, useRef, useState } from 'react';
 
 //api calls
-import { ActualizarTracking, SubirFactura } from '@/api/tracking/detalleTracking';
+import { ActualizarTracking, SincronizarCambios, SubirFactura } from '@/api/tracking/detalleTracking';
 import { iconMap } from '@/lib/iconMap';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { comboboxDirecciones } from '@/servicesFront/direccion/servicioFrontDireccion';
@@ -93,7 +93,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
             name: 'Sincronizar Cambios',
             className: 'bg-orange-400 text-white hover:bg-orange-500 ',
             isActive: true,
-            onClick: () => {},
+            onClick: () => SincronizarCambiosAux(trackingFront, setTracking, setActualizando),
             icon: RotateCcw,
         },
         {
@@ -1252,4 +1252,30 @@ async function IngresoFactura(
     } finally {
         setGuardandoFactura(false);
     }
+}
+
+async function SincronizarCambiosAux(trackingFront: TrackingCompleto, setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, setActualizando: React.Dispatch<React.SetStateAction<boolean>>) {
+    // - Se van a guardar los cambios actuales y sincronizar los cambios con ambas APIs de ParcelsApp y Aeropost
+    // 1. Mostrar el spinner porque se está actualizando la data
+    // 2. GuardarSincronizar datos con las demas APIs
+    // 3. Igualarlo a trackingFront
+    // 4. Quitar el spinner
+
+    // 1. Mostrar el spinner porque se está actualizando la data
+    setActualizando(true);
+
+    try{
+        // 2. GuardarSincronizar datos con las demas APIs
+        setTracking(await SincronizarCambios(trackingFront));
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    }catch(e){
+        console.log(e)
+        ErrorModal('Error al sincronizar cambios', 'Hubo un error al sincronizar cambios. Vuelvalo a intentar o contacte con soporte TI.');
+    }finally {
+        // 4. Quitar el spinner
+        setActualizando(false);
+    }
+
+
 }
