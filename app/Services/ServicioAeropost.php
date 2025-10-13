@@ -435,6 +435,18 @@ class ServicioAeropost
             return Cache::get('aeropost_access_token');
         }
 
+        Log::info('[AeroPost Config]', [
+            'grant_type' => config('services.aeropost.grant_type'),
+            'scope' => config('services.aeropost.scope'),
+            'username' => config('services.aeropost.username'),
+            'password' => config('services.aeropost.password'),
+            'gateway' => config('services.aeropost.gateway'),
+            'url_auth' => config('services.aeropost.url_auth'),
+            'url_base' => config('services.aeropost.url_base'),
+            'client_id' => config('services.aeropost.client_id'),
+            'client_secret' => config('services.aeropost.client_secret'),
+        ]);
+
         // 1.2 Si no, se solicita mediante el endpoint
         $urlAccesoToken = config('services.aeropost.url_auth');
 

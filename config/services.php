@@ -41,7 +41,7 @@ return [
     ],
 
     'aeropost' => [
-        'grant_type' => env('AEROPOST_GRANT_TYPE'),
+        'grant_type' => env('AEROPOST_GRANTTYPE'),
         'scope' =>  env('AEROPOST_SCOPE'),
         'username' => env('AEROPOST_USERNAME'),
         'password' => env('AEROPOST_PASSWORD'),
@@ -49,7 +49,7 @@ return [
         'url_auth' => env('AEROPOST_URL_AUTH'),
         'url_base' =>  env('AEROPOST_URL_BASE'),
         'client_id' => env('AEROPOST_CLIENT_ID'),
-        'client_secret' => env('AEROPOST_CLIENT_ID'),
+        'client_secret' => env('AEROPOST_CLIENT_SECRET'),
     ],
 
 ];
