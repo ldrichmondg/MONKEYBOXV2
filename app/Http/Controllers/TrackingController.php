@@ -186,7 +186,7 @@ class TrackingController
         // Sincronizar cambios que vengan de ParcelsApp o de Aeropost
 
         try{
-            $tracking = ServicioTracking::Sincronizar($request);
+            $tracking = ServicioTracking::ActualizarSincronizar($request);
             $tracking->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
 
             return response()->json(['tracking' => (new TrackingDetalleResource($tracking))->resolve()]);
