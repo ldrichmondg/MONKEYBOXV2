@@ -51,7 +51,7 @@ class ServicioAeropost
         }
 
         // 1) Autenticación + Http client
-        $baseUrl = rtrim((string) env('AEROPOST_URL_BASE'), '/');
+        $baseUrl = rtrim((string) config('services.aeropost.url_base'), '/');
         $http    = self::buildHttpClient();
 
         // 2) Procesar en bloques
@@ -436,11 +436,11 @@ class ServicioAeropost
         }
 
         // 1.2 Si no, se solicita mediante el endpoint
-        $urlAccesoToken = env('AEROPOST_URL_AUTH');
+        $urlAccesoToken = config('services.aeropost.url_auth');
 
         $headers = [
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Basic '.base64_encode(env('AEROPOST_CLIENT_ID').':'.env('AEROPOST_CLIENT_SECRET')),
+            'Authorization' => 'Basic '.base64_encode(config('services.aeropost.client_id').':'.config('services.aeropost.client_secret')),
         ];
 
         // - Si hay error, intentarlo 2 veces mas
@@ -449,11 +449,11 @@ class ServicioAeropost
             $respuesta = Http::withHeaders($headers)
                 ->asForm() // Esto fuerza a que se envie como x-www-urlenconded
                 ->post($urlAccesoToken, [
-                    'grant_type' => env('AEROPOST_GRANTTYPE'),
-                    'scope' => env('AEROPOST_SCOPE'),
-                    'username' => env('AEROPOST_USERNAME'),
-                    'password' => env('AEROPOST_PASSWORD'),
-                    'gateway' => env('AEROPOST_GATEWAY'),
+                    'grant_type' => config('services.aeropost.grant_type'),
+                    'scope' => config('services.aeropost.scope'),
+                    'username' => config('services.aeropost.username'),
+                    'password' => config('services.aeropost.password'),
+                    'gateway' => config('services.aeropost.gateway'),
                 ]);
 
             if (! $respuesta->successful()) {
@@ -500,7 +500,7 @@ class ServicioAeropost
         }
 
         // 2. Si no estan entonces hacer la llamada a AP API Couriers
-        $urlCourier = env('AEROPOST_URL_BASE').'/api/couriers';
+        $urlCourier = config('services.aeropost.url_base').'/api/couriers';
         $headers = [
             'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
         ];
@@ -615,7 +615,7 @@ class ServicioAeropost
         // 3.1 Si es error 500, entonces verificar con el GETPACKAGES si hay uno con el numeroTracking
         // 4. Verificar que todos los campos que necesito se encuentren (id principalmente)
 
-        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts?language=en';
+        $url = config('services.aeropost.url_base').'/api/pre-alerts?language=en';
         // 1. Crear los encabezados
         $headers = [
             'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
@@ -662,7 +662,7 @@ class ServicioAeropost
         // 1. Obtener el token de Acceso
         // 2. Actualizar los campos
 
-        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        $url = config('services.aeropost.url_base').'/api/pre-alerts/' . $idPrealerta . '?language=en';
         // 1. Crear los encabezados
         $headers = [
             'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
@@ -707,7 +707,7 @@ class ServicioAeropost
     public static function EliminarPrealerta(int $idPrealerta): void {
         // 1. Con el $idPrealerta elimino la prealerta de aeropost
 
-        $url = env('AEROPOST_URL_BASE').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        $url = config('services.aeropost.url_base').'/api/pre-alerts/' . $idPrealerta . '?language=en';
         // 1. Crear los encabezados
         $headers = [
             'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
@@ -738,7 +738,7 @@ class ServicioAeropost
         // 1. Llama al API de GetPackage
         // 2. Retorna el contenido
         // # Proposito: Si se necesita toda la data llamar a esta funcion de integracion
-        $url = env('AEROPOST_URL_BASE').'/api/v2/packages/' . $numeroTracking . '?language=en';
+        $url = config('services.aeropost.url_base').'/api/v2/packages/' . $numeroTracking . '?language=en';
         // 1. Crear los encabezados
         $headers = [
             'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
