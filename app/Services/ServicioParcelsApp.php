@@ -18,8 +18,8 @@ class ServicioParcelsApp
         // se retorna null si hubo un problema o el tracking en sí no lo encontro/existe
         try {
             Log::info('[SPA,OT] Pasa1');
-            $apiKey = env('PARCELSAPP_API_KEY');
-            $urlSeguimiento = env('PARCELSAPP_URL_SEGUIMIENTO');
+            $apiKey = config('services.parcelsapp.api_key');
+            $urlSeguimiento = config('services.parcelsapp.url_seguimiento');
             Log::info('[SPA,OT] apikey: '.$apiKey. ' urlSeg: '.$urlSeguimiento);
             $datosRespuesta = [];
             // Datos del envío

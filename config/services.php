@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'parcelsapp' => [
+        'api_key' => env('PARCELSAPP_API_KEY'),
+        'url_seguimiento' => env('PARCELSAPP_URL_SEGUIMIENTO'),
+    ],
+
 ];
