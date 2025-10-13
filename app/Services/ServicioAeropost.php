@@ -388,7 +388,7 @@ class ServicioAeropost
 
         // 5. Enviar el request para crear la prealerta
         try {
-            $idPrealerta = self::RequestRegistrarPrealerta(2979592, $courierSeleccionado['id'], $tracking->IDTRACKING, $nombreTienda, $valor, $descripcion);
+            $idPrealerta = self::RequestRegistrarPrealerta(3861094, $courierSeleccionado['id'], $tracking->IDTRACKING, $nombreTienda, $valor, $descripcion);
         } catch(Exception $e) {
             // # Como a veces el API de AP de registrar prealerta falla, verificar con otro endpoint y obtener el idPrealerta
             $dataGetPackage = self::ObtenerPaquete($tracking->IDTRACKING);
@@ -627,10 +627,23 @@ class ServicioAeropost
         // 3.1 Si es error 500, entonces verificar con el GETPACKAGES si hay uno con el numeroTracking
         // 4. Verificar que todos los campos que necesito se encuentren (id principalmente)
 
+        /*Log::info('[AeroPost Config]', [
+            'grant_type'     => config('services.aeropost.grant_type'),
+            'scope'          => config('services.aeropost.scope'),
+            'username'       => config('services.aeropost.username'),
+            'password'       => config('services.aeropost.password'),
+            'gateway'        => config('services.aeropost.gateway'),
+            'url_auth'       => config('services.aeropost.url_auth'),
+            'url_base'       => config('services.aeropost.url_base'),
+            'client_id'      => config('services.aeropost.client_id'),
+            'client_secret'  => config('services.aeropost.client_secret'),
+            'tokenAcceso' => self::ObtenerTokenAcceso(),
+        ]);*/
+
         $url = config('services.aeropost.url_base').'/api/pre-alerts?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
+            'Authorization' => 'Bearer '.self::ObtenerTokenAcceso(),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];

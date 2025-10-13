@@ -94,8 +94,8 @@ class ServicioParcelsApp
     {
         // todo: Hacer exepcion unica para llaamda api de parcelsApp
         try {
-            $apiKey = env('PARCELSAPP_API_KEY');
-            $urlSeguimiento = env('PARCELSAPP_URL_SEGUIMIENTO');
+            $apiKey = config('services.parcelsapp.api_key');
+            $urlSeguimiento = config('services.parcelsapp.url_seguimiento');
 
             $respuesta = HttpService::getRequest($urlSeguimiento, [
                 'apiKey' => $apiKey,
