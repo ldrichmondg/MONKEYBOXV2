@@ -17,7 +17,7 @@ class SeederDistritos extends Seeder
         $now = Carbon::now();
 
         // Ruta del archivo CSV
-        $csv = Reader::createFromPath(storage_path('app/distritos.csv'), 'r');
+        $csv = Reader::createFromPath(base_path('resources/data/distritos.csv'), 'r');
         $csv->setHeaderOffset(0); // Primera fila como encabezado
 
         $batchSize = 100;
