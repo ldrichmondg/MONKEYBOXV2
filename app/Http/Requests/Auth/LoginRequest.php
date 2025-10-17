@@ -49,6 +49,19 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Si llegó aquí, las credenciales son correctas
+        $user = Auth::user();
+
+        //bloquear los perfiles de clientes:
+        if ($user->IDPERFIL == 3) {
+            Auth::logout(); // cerrar sesión inmediatamente
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Esta cuenta aún no tiene acceso al sistema.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

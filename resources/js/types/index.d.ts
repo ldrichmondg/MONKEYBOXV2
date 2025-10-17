@@ -57,7 +57,6 @@ export interface ComboBoxItem {
     descripcion: string;
 }
 
-
 /* TAGIFY */
 export type TagifyTag = {
     value: string;

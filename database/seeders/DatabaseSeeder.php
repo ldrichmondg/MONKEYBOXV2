@@ -13,18 +13,19 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            SeederPerfil::class,
-            SeederUsuario::class,
-            SeederCliente::class,
-            SeederDireccion::class,
-            SeederEstadoMBox::class,
-            SeederProveedor::class,
-            SeederProvincias::class,
-            SeederCantones::class,
-            SeederDistritos::class,
-            // NO AGREGAR SEEDERREALES POR NINGUN MOTIVO AH NO SER QUE SE DESEE ALIMENTAR TODOS LOS CLIENTES DESDE CERO
-            // PONER SEEDERCLIENTES REALES REPRESENTA UN PELIGRO PARA LA BD
-        ]
+                SeederPerfil::class,
+                SeederUsuario::class,
+                SeederCliente::class,
+                SeederDireccion::class,
+                SeederEstadoMBox::class,
+                SeederProveedor::class,
+                SeederProvincias::class,
+                SeederCantones::class,
+                SeederDistritos::class,
+                SeederClientesMasivo::class,
+                // NO AGREGAR SEEDERREALES POR NINGUN MOTIVO AH NO SER QUE SE DESEE ALIMENTAR TODOS LOS CLIENTES DESDE CERO
+                // PONER SEEDERCLIENTES REALES REPRESENTA UN PELIGRO PARA LA BD
+            ]
         );
 
     }
