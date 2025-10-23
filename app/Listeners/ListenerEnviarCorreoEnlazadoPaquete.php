@@ -5,9 +5,10 @@ namespace App\Listeners;
 use App\Events\EventoClienteEnlazadoPaquete;
 use App\Mail\EmailClienteEnlazadoPaquete;
 use Exception;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Mail;
 
-class ListenerEnviarCorreoEnlazadoPaquete
+class ListenerEnviarCorreoEnlazadoPaquete implements ShouldQueue
 {
     /**
      * Create the event listener.
@@ -22,19 +23,11 @@ class ListenerEnviarCorreoEnlazadoPaquete
      */
     public function handle(EventoClienteEnlazadoPaquete $event): bool
     {
-        try {
-            $usuario = $event->usuario;
-            $tracking = $event->tracking;
-            $equivocado = $event->equivocado ?? false;
 
-            Mail::to($usuario->email)->send(new EmailClienteEnlazadoPaquete($tracking, $usuario, $equivocado));
+        $usuario = $event->usuario;
+        $tracking = $event->tracking;
+        $equivocado = $event->equivocado ?? false;
 
-            return true; // allow event propagation
-
-        } catch (Exception $e) {
-            // var_dump($e);
-            // die($e);
-            return false; // stop event propagation
-        }
+        //Mail::to($usuario->email)->send(new EmailClienteEnlazadoPaquete($tracking, $usuario, $equivocado));
     }
 }

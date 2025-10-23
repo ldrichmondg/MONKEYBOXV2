@@ -4,10 +4,11 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class EventoClienteEnlazadoPaquete
+class EventoClienteEnlazadoPaquete implements ShouldQueue
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
