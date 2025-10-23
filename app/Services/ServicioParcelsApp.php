@@ -65,7 +65,7 @@ class ServicioParcelsApp
                 }
 
                 if (! $trackingCompleto) {
-                    Log::info('[ServicioPA->ObtenerT] Tracking Incompleto: '.$datosRespuesta);
+                    Log::info('[ServicioPA->ObtenerT] Tracking Incompleto: '. json_encode($datosRespuesta));
                     throw new Exception('[ServicioPA->ObtenerT] Se hicieron los intentos al llamar a la API pero no se obtuvo un tracking');
                 }
 
