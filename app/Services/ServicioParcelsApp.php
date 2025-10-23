@@ -20,7 +20,6 @@ class ServicioParcelsApp
             Log::info('[SPA,OT] Pasa1');
             $apiKey = config('services.parcelsapp.api_key');
             $urlSeguimiento = config('services.parcelsapp.url_seguimiento');
-            Log::info('[SPA,OT] apikey: '.$apiKey. ' urlSeg: '.$urlSeguimiento);
             $datosRespuesta = [];
             // Datos del envío
             $envios = [
@@ -73,6 +72,7 @@ class ServicioParcelsApp
                 Log::info('[ServicioPA->ObtenerT] Datos respuesta: '.json_encode($datosRespuesta));
                 $datosLimpios = ServicioParcelsApp::LimpiarRespuestaParcelsApp($datosRespuesta);
 
+                Log::info('[ServicioPA->ObtenerT] PASA N2');
                 return $datosLimpios;
             } else {
                 throw new Exception('[ServicioPA->ObtenerT] Error en la solicitud POST: '.$respuesta->status());

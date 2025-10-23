@@ -73,6 +73,7 @@ class ServicioTracking
             // 2. Llamar a la API de parcelsApp para que retorne t#do el historial
             $trackingNuevo = ServicioTracking::ConstruirTrackingCompleto($request->idTracking, $request->idCliente);
 
+            Log::info('Paso N-1');
             return $trackingNuevo;
         } catch (Exception $e) {
 
@@ -180,20 +181,22 @@ class ServicioTracking
     public static function ConstruirTrackingCompleto($idTracking, $idCliente): ?Tracking
     {
         try {
+            Log::info('[SPA, CTrakCom] Paso N1');
             $respuestaObjeto = ServicioParcelsApp::ObtenerTracking($idTracking);
-
+            Log::info('[SPA, CTrakCom] Paso N2');
             if (!$respuestaObjeto) {
                 throw new Exception('Respuesta inválida/sin datos/el tracking no se encontró');
             }
 
+            Log::info('[SPA, CTrakCom] Paso N3');
             $tracking = ServicioTracking::ConstruirTracking($respuestaObjeto, $idCliente);
-
+            Log::info('[SPA, CTrakCom] Paso N4');
             if (!$tracking) {
                 throw new Exception('No se pudo construir el tracking');
             }
-
+            Log::info('[SPA, CTrakCom] Paso N5');
             $historiales = ServicioTracking::ConstruirHistoriales($respuestaObjeto, $tracking);
-
+            Log::info('[SPA, CTrakCom] Paso N6');
             if (!$historiales) {
                 throw new Exception('No se pudieron construir los historiales');
             }
