@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { iconMap } from '@/lib/iconMap';
-import { ContenidoModal, EliminarModal } from '@/ownComponents/modals/eliminarModal';
+import { ContenidoModal } from '@/ownComponents/modals/eliminarModal';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { ExitoModal } from '@/ownComponents/modals/exitoModal';
 import { Spinner } from '@/ownComponents/spinner';

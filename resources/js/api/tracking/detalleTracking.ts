@@ -199,7 +199,7 @@ function FormDataTracking(tracking: TrackingCompleto): FormData {
     // Agrega las imágenes (array)
     tracking.imagenes.forEach((img, index) => {
         formData.append(`imagenes[${index}][archivo]`, img.archivo);
-        formData.append(`imagenes[${index}][archivoPropio]`, String(img.archivoPropio));
+        formData.append(`imagenes[${index}][tipoImagen]`, String(img.tipoImagen));
         if (img.id) formData.append(`imagenes[${index}][id]`, String(img.id));
     });
 

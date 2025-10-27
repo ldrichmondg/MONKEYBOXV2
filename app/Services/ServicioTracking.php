@@ -25,6 +25,7 @@ use App\Models\Imagen;
 use App\Models\Proveedor;
 use App\Models\Tracking;
 use App\Models\TrackingHistorial;
+use App\Models\TrackingProveedor;
 use DateTime;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -38,6 +39,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\FilesystemException;
@@ -243,18 +245,13 @@ class ServicioTracking
         foreach ($imagenesDatos as $index => $datos) {
             // 2.1. Solo guardar las que son propias y los nuevos (id < 0)
             $id = $datos['id'] ?? null;
-            $archivoPropio = $datos['archivoPropio'] ?? null;
+            $archivoPropio = $datos['tipoImagen'] ?? null;
             if ($archivoPropio && $id) {
                 if ($id < 0) {
                     $fileInRequest = "imagenes.$index.archivo"; // nombre exacto que espera GuardarArchivo
                     $path = 'trackings/' . $request->idTracking;
                     $rutaGuardada = self::GuardarArchivo($fileInRequest, $path, $request);
                     Log::info("[ST, AT] Archivo guardado correctamente: $rutaGuardada");
-
-                    //guardarlo en registro imagen
-                    /*$archivo = $request->file($fileInRequest);
-                    $filename = str_replace(' ', '_', $archivo->getClientOriginalName());
-                    $pathFile = $path . '/' . $filename;*/
 
                     $imagen = Imagen::create([
                         'RUTA' => $rutaGuardada,
@@ -284,9 +281,7 @@ class ServicioTracking
 
         // 4. Actualizar los datos del encabezado
         $proveedor = Proveedor::find($request->idProveedor);
-        Log::info($proveedor && $proveedor->NOMBRE == 'MiLocker');
         if ($proveedor && $proveedor->NOMBRE == 'MiLocker') {
-            Log::info('ES MILOCKER');
             $trackingProveedor = $trackingViejo->trackingProveedor;
             $trackingProveedor->TRACKINGPROVEEDOR = $request->trackingProveedor;
             $trackingProveedor->save();
@@ -504,11 +499,65 @@ class ServicioTracking
             }
             // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
             else{
-
+                ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]); //recibe un arreglo de idsTracking
             }
 
             $tracking->refresh(); //por si actualizamos tracking o historialesTracking que se actualice los datos al modelo que ya estabamos usando
             return $tracking;
         });
     }
+
+    /**
+     * @return void
+     * @throws \App\Exceptions\ExceptionAPObtenerPaquetes
+     */
+    public static function SincronizarProveedoresMasivo(){
+        // El proposito es sincronizar todos los trackings de los proveedores (Ahorita solo AP)
+        // La sincronizacion es unicamente del estado para que sea rapido
+        // 1. Filtrar unicamente los trackings del proveedor Aeropost
+        // 2. Llamar al endpoint de Aeropost para obtener los paquetes de forma masiva
+        // 3. Actualizar cada tracking con su nuevo estado
+
+
+        // 1. Filtrar unicamente los trackings del proveedor Aeropost
+        $trackingProveedorIds = TrackingProveedor::where('IDPROVEEDOR', 1)
+            ->pluck('IDTRACKING');
+
+        // Filtramos listadoPendientes directamente en la consulta
+        $listadoPendientes = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
+            ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
+            ->whereIn('id', $trackingProveedorIds)
+            ->pluck('IDTRACKING');
+
+        // 2. Llamar al endpoint de Aeropost para obtener los paquetes de forma masiva
+        $trackingsMasivos = ServicioAeropost::ObtenerPaquetesMasivos($listadoPendientes->toArray());
+
+        // 3. Actualizar cada tracking con su nuevo estado
+        $trackings = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
+            ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
+            ->whereIn('id', $trackingProveedorIds)
+            ->get();
+
+        //recorro todos los trackings de la bd
+        foreach($trackings as $trackingBd){
+            //recorro todos los trackings del request
+            foreach($trackingsMasivos as $key => $trackingMasivo){
+                if($trackingMasivo['courierTracking'] == $trackingBd->IDTRACKING){
+                    $estado = ServicioAeropost::mapEstadoAeropost($trackingMasivo['graphicStationID']);
+                    if ($trackingBd->ESTADOSINCRONIZADO == $trackingBd->ESTADOMBOX){
+                        $trackingBd->ESTADOMBOX = $estado;
+                    }
+                    $trackingBd->ESTADOSINCRONIZADO = $estado;
+                    $trackingBd->save();
+                }
+
+                // eliminar el tracking que ya se procesó
+                unset($trackingsMasivos[$key]);
+                break;
+
+            }
+        }
+
+    }
+
 }

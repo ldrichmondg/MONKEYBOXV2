@@ -38,6 +38,7 @@ class ServicioParcelsApp
 
             if ($respuesta->successful()) {
                 $datosRespuesta = $respuesta->json();
+                Log::info('[SPA,OT] Datos respuesta ' . json_encode($datosRespuesta));
                 $uuid = $datosRespuesta['uuid'] ?? '';
 
                 $trackingCompleto = false;
@@ -105,6 +106,7 @@ class ServicioParcelsApp
             if ($respuesta->successful()) {
                 // Convertir la respuesta a array
                 $datosRespuesta = $respuesta->json();
+                Log::info('[SPA VES] datos respuesta: ' . json_encode($datosRespuesta));
 
                 if ($datosRespuesta['done']) {
                     return ['estado' => 'Seguimiento completo', 'datos' => $datosRespuesta];

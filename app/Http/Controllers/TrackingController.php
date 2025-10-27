@@ -40,14 +40,31 @@ class TrackingController
     public function ConsultaVista(): Response|RedirectResponse
     {
         try {
+            ServicioTracking::SincronizarProveedoresMasivo();
             $trackings = Tracking::all();
-            Log::info($trackings);
             return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
             return redirect()->route('tracking.consulta.vista')
                 ->with('error', 'Hubo un error al cargar la ventana.');
+        }
+    }
+
+    /**
+     * @return JsonResponse
+     * Possible throws:
+     */
+    public function ConsultaJson(): JsonResponse
+    {
+        try {
+            ServicioTracking::SincronizarProveedoresMasivo();
+            $trackings = Tracking::all();
+            return response()->json(['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
+
+        } catch (Exception $e) {
+            Log::error('[TrackingController->ConsultaJson] error:' . $e);
+            return response()->error('Hubo un error al cargar los trackings.');
         }
     }
 
@@ -125,7 +142,6 @@ class TrackingController
     public function ActualizaJson(RequestActualizarTracking $request): JsonResponse
     {
         try {
-            Log::info('ENTRAMOS');
             ServicioTracking::ActualizarTracking($request);
             return response()->json(['Exito']);
         } catch (Exception $e) {

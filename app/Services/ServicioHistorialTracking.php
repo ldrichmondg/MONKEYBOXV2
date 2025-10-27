@@ -32,7 +32,8 @@ class ServicioHistorialTracking
      * @throws ModelNotFoundException
      * @throws
      */
-    public static function ActualizarHistoriales($request){
+    public static function ActualizarHistoriales($request)
+    {
         // 1. Actualizar los que tienen id
         // 2. Crear los que tienen id negativo
 
@@ -43,21 +44,21 @@ class ServicioHistorialTracking
             foreach ($historiales as $index => $historial) {
                 $id = $historial['id'] ?? null;
                 // 1. Actualizar los que tienen id
-                if ($id && $id > 0){
+                if ($id && $id > 0) {
                     $historialActualizar = TrackingHistorial::findOrFail($id);
                     $historialActualizar->DESCRIPCIONMODIFICADA = $historial['descripcionModificada'] ?? '';
                     $historialActualizar->OCULTADO = $historial['ocultado'];
                     $historialActualizar->timestamps = false;
                     $historialActualizar->save();
-                } elseif ($id && $id < 0){
+                } elseif ($id && $id < 0) {
                     $historialNuevo = new TrackingHistorial();
                     Log::info('------');
                     Log::info($historial);
                     Log::info('------');
                     $historialNuevo->DESCRIPCION = $historial['descripcion'];
                     $historialNuevo->DESCRIPCIONMODIFICADA = $historial['descripcionModificada'] ?? '';
-                    $historialNuevo->CODIGOPOSTAL =  $historial['codigoPostal'];
-                    $historialNuevo->PAISESTADO =  $historial['paisEstado'];
+                    $historialNuevo->CODIGOPOSTAL = $historial['codigoPostal'];
+                    $historialNuevo->PAISESTADO = $historial['paisEstado'];
                     $historialNuevo->OCULTADO = $historial['ocultado'];
                     $historialNuevo->TIPO = $historial['tipo'];
                     $historialNuevo->IDCOURIER = 10; //por el momento
@@ -66,6 +67,14 @@ class ServicioHistorialTracking
                 }
             }
         });
+    }
+
+    public static function EliminarHistorialesProveedor(int $idTracking, int $tipoHistorialTracking): void
+    {
+        // 1. Eliminar los historiales de un tracking relacionados a un proveedor especifico
+        TrackingHistorial::where('IDTRACKING', $idTracking)
+            ->where('TIPO', $tipoHistorialTracking)
+            ->delete();
     }
 
 }

@@ -6,17 +6,22 @@ use App\Actions\ActionDepurarRegex;
 use App\Exceptions\ExceptionAeropost;
 use App\Exceptions\ExceptionAPCourierNoObtenido;
 use App\Exceptions\ExceptionAPCouriersNoObtenidos;
+use App\Exceptions\ExceptionAPObtenerPaquetes;
 use App\Exceptions\ExceptionAPRequestActualizarPrealerta;
 use App\Exceptions\ExceptionAPRequestEliminarPrealerta;
 use App\Exceptions\ExceptionAPRequestRegistrarPrealerta;
 use App\Exceptions\ExceptionAPTokenNoObtenido;
+use App\Models\Enum\TipoImagen;
+use App\Models\Imagen;
 use App\Models\Prealerta;
 use App\Models\Tracking;
 use App\Models\TrackingProveedor;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\TrackingHistorial;
@@ -37,7 +42,7 @@ class ServicioAeropost
      * - Actualiza estado local (ESTADOSINCRONIZADO/ESTADOMBOX) y TrackingProveedor.
      * - Descarga y persiste historial de estados (solo entradas nuevas).
      *
-     * @param array<int,string> $idsTracking  Lista de IDTRACKING (códigos externos Aeropost).
+     * @param array<int,string> $idsTracking Lista de IDTRACKING (códigos externos Aeropost).
      *
      * @return void
      *
@@ -51,8 +56,8 @@ class ServicioAeropost
         }
 
         // 1) Autenticación + Http client
-        $baseUrl = rtrim((string) config('services.aeropost.url_base'), '/');
-        $http    = self::buildHttpClient();
+        $baseUrl = rtrim((string)config('services.aeropost.url_base'), '/');
+        $http = self::buildHttpClient();
 
         // 2) Procesar en bloques
         foreach (array_chunk($idsTracking, 50) as $chunk) {
@@ -83,232 +88,220 @@ class ServicioAeropost
      *
      * @return void
      * @throws ConnectionException
+     * @throws ExceptionAPObtenerPaquetes
+     * @throws ModelNotFoundException
      */
     private static function procesarTrackingId(string $idTracking, string $baseUrl, PendingRequest $http): void
     {
         // Detalle del paquete
         $pkgData = self::obtenerDetallePaquete($baseUrl, $http, $idTracking);
-        if ($pkgData === null) {
-            // Ya se registró el motivo en logs
-            return;
-        }
 
-        $aerotrack        = Arr::get($pkgData, 'aerotrack');
+        $aerotrack = Arr::get($pkgData, 'aerotrack');
         $graphicStationId = Arr::get($pkgData, 'graphicStationID');
+        $weightKilos = Arr::get($pkgData, 'weightKilos');
+        $images = Arr::get($pkgData, 'attachments');
 
         // Buscar tracking local
-        $tracking = Tracking::where('IDTRACKING', $idTracking)->first();
-        Log::info('Aeropost: procesando tracking.', ['payload' => $pkgData, 'graphicStationId' => $graphicStationId, 'tracking' => $tracking]);
+        $tracking = Tracking::where('IDTRACKING', $idTracking)->firstOrFail();
+        //Log::info('Aeropost: procesando tracking.', ['graphicStationId' => $graphicStationId, 'tracking' => $tracking, 'weightKilos' => $weightKilos, 'payload' => $pkgData]);
 
-        if (!$tracking) {
-            return;
-        }
+        // T#odo en una transaccion por si algo falla que se deje en su estado anterior
+        DB::transaction(function () use ($tracking, $aerotrack, $graphicStationId, $weightKilos, $images, $baseUrl, $http, $idTracking) {
 
-        // Actualizar estados y TrackingProveedor
-        self::actualizarTrackingYProveedor($tracking, $aerotrack, $graphicStationId);
+            // 1. Actualizar estados y TrackingProveedor
+            self::actualizarTrackingYProveedor($tracking, $aerotrack, $graphicStationId, $weightKilos, $images);
 
-        // Historial de estados
-        if (!$aerotrack) {
-            Log::warning('Aeropost: aerotrack vacío, no se consulta historial.', ['id' => $idTracking]);
-            return;
-        }
-
-        $history = self::obtenerHistorial($baseUrl, $http, $aerotrack, $idTracking);
-        if (!is_array($history)) {
-            return;
-        }
-
-        self::nuevosHistoriales($tracking, $history);
-    }
-
-    /**
-     * Obtiene y valida el token desde la API + cache. Loguea errores y no lanza excepción.
-     *
-     * @return string|null Token o null si no disponible.
-     */
-    private static function obtenerTokenOLog(): ?string
-    {
-        try {
-            ServicioAeropost::ObtenerTokenAcceso();
-        } catch (\Throwable $e) {
-            Log::error('Aeropost: error obteniendo token', ['ex' => $e->getMessage()]);
-            return null;
-        }
-
-        $token = Cache::get('aeropost_access_token');
-        if (!$token) {
-            Log::error('Aeropost: token no disponible en cache.');
-            return null;
-        }
-        return $token;
+            // 2. Historial de estados
+            if ($aerotrack) {
+                $history = self::obtenerHistorial($baseUrl, $http, $aerotrack, $idTracking);
+                self::nuevosHistoriales($tracking, $history);
+            }
+        });
     }
 
     /**
      * Construye el cliente HTTP con los headers y timeout requeridos.
      *
-     * @param string $token Bearer token.
      * @return PendingRequest
-     *
+     * @throws ConnectionException
+     * @throws ExceptionAPTokenNoObtenido
      */
     private static function buildHttpClient(): PendingRequest
     {
         return Http::withHeaders([
             'Authorization' => 'Bearer ' . self::ObtenerTokenAcceso(),
-            'Accept'        => 'application/json',
-            'Content-Type'  => 'application/json',
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
         ]);
     }
 
     /**
-     * Llama a /api/v2/packages/{idTracking} y devuelve el JSON decodificado o null si no ok.
+     * Llama a /api/v2/packages/{idTracking} y devuelve el JSON decodificado.
      *
      * @param string $baseUrl
      * @param PendingRequest $http
      * @param string $idTracking
      *
-     * @return array<string,mixed>|null
-     * @throws ConnectionException
+     * @return array<string,mixed>
+     * @throws ExceptionAPObtenerPaquetes
      */
-    private static function obtenerDetallePaquete(string $baseUrl, PendingRequest $http, string $idTracking): ?array
+    private static function obtenerDetallePaquete(string $baseUrl, PendingRequest $http, string $idTracking): array
     {
         $pkgUrl = "{$baseUrl}/api/v2/packages/{$idTracking}";
-        $res    = $http->retry(2, 300)->get($pkgUrl);
-
-        Log::info('Aeropost: respuesta packages.', ['id' => $idTracking, 'status' => $res->status()]);
-
-        if (!$res->ok()) {
-            if ($res->status() >= 500) {
-                Log::warning('Aeropost 5xx en packages.', ['id' => $idTracking, 'status' => $res->status()]);
-            } else {
-                Log::warning('Aeropost: respuesta no OK en packages.', [
-                    'id' => $idTracking, 'status' => $res->status(), 'body' => $res->body()
-                ]);
-            }
-            return null;
+        try {
+            $res = $http->retry(2, 300)->get($pkgUrl);
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPObtenerPaquetes($idTracking, null, "Error de conexión: {$e->getMessage()}");
         }
 
-        return $res->json() ?? [];
+        //Si la respuesta fue procesada
+        //Log::info('Aeropost: respuesta packages.', ['id' => $idTracking, 'status' => $res->status()]);
+
+        if (!$res->ok()) {
+            throw new ExceptionAPObtenerPaquetes($idTracking, $res->status(), $res->body());
+        }
+
+        return $res->json();
     }
 
     /**
      * Actualiza ESTADOSINCRONIZADO/ESTADOMBOX y el TrackingProveedor (aerotrack) si aplica.
      *
-     * @param Tracking         $tracking
-     * @param string|null      $aerotrack
-     * @param int|string|null  $graphicStationId
-     *
+     * @param Tracking $tracking
+     * @param string|null $aerotrack
+     * @param int $graphicStationId
+     * @param float $kilos
+     * @param array $imagenesAeropost
      * @return void
+     * @throws ExceptionAPObtenerPaquetes
+     * @throws ModelNotFoundException
      */
-    private static function actualizarTrackingYProveedor(Tracking $tracking, ?string $aerotrack, int|string|null $graphicStationId): void
+    private static function actualizarTrackingYProveedor(Tracking $tracking, ?string $aerotrack, int $graphicStationId, float $kilos, array $imagenesAeropost): void
     {
         // Estado sincronizado
-        if ($graphicStationId !== null) {
-            $estado = self::mapEstadoAeropost((int) $graphicStationId);
-            Log::info('Aeropost: estado mapeado.', [
-                'id' => $tracking->IDTRACKING,
-                'graphicStationId' => $graphicStationId,
-                'estado' => $estado
-            ]);
 
-            if ($estado !== null) {
-                if ($tracking->ESTADOSINCRONIZADO == $tracking->ESTADOMBOX) {
-                    $tracking->ESTADOMBOX = $estado;
-                }
-                $tracking->ESTADOSINCRONIZADO = $estado;
-                $tracking->save();
+        $estado = self::mapEstadoAeropost($graphicStationId);
 
-                Log::info('Tracking Aeropost actualizado.', [
-                    'id' => $tracking->IDTRACKING, 'estado' => $estado
-                ]);
-            }
+        if ($estado == null) {
+            throw new ExceptionAPObtenerPaquetes($tracking->IDTRACKING);
         }
 
-        // TrackingProveedor
+        //si es el mismo estado el sincronizado con el que se le muestra al cliente
+        if ($tracking->ESTADOSINCRONIZADO == $tracking->ESTADOMBOX) {
+            $tracking->ESTADOMBOX = $estado;
+        }
+        $tracking->ESTADOSINCRONIZADO = $estado;
+
+        // Peso
+        $tracking->PESO = $kilos;
+
+        /*Log::info('[SA, ATP] Tracking Aeropost actualizado.', [
+            'id' => $tracking->IDTRACKING, 'estado' => $estado
+          ]);*/
+        $tracking->save();
+
+        // Aerotrack
         if ($aerotrack) {
-            $trackingProveedor = TrackingProveedor::where('IDTRACKING', $tracking->id)->first();
-            if ($trackingProveedor) {
-                $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
-                $trackingProveedor->save();
-            }
+            $trackingProveedor = TrackingProveedor::where('IDTRACKING', $tracking->id)->firstOrFail();
+            $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
+            $trackingProveedor->save();
         }
+
+        //imagenes
+        if (count($imagenesAeropost) <= 0)
+            return;
+
+        foreach ($imagenesAeropost as $imagen) {
+            if ($imagen['category'] != 3)
+                continue;
+            //solo si son category == 3 porque esas son las fotos del paquete
+            Imagen::firstOrCreate(
+                [
+                    'RUTA' => $imagen['url'],
+                ],        // Criterios de búsqueda
+                [
+                    'TIPOIMAGEN' => TipoImagen::Aeropost->value,
+                    'RUTA' => $imagen['url'],
+                    'IDTRACKING' => $tracking->id
+                ]    // Atributos para crear si no existe
+            );
+        }
+
     }
 
     /**
      * Llama a /api/v2/packages/{aerotrack}/status-history. Devuelve array o null si no ok.
      *
-     * @param string          $baseUrl
-     * @param PendingRequest  $http
-     * @param string          $aerotrack
-     * @param string          $idTracking  Para logs.
+     * @param string $baseUrl
+     * @param PendingRequest $http
+     * @param string $aerotrack
+     * @param string $idTracking Para logs.
      *
      * @return array<int,array<string,mixed>>|null
+     * @throws ExceptionAPObtenerPaquetes
      */
     private static function obtenerHistorial(string $baseUrl, PendingRequest $http, string $aerotrack, string $idTracking): ?array
     {
-        $url  = "{$baseUrl}/api/v2/packages/{$aerotrack}/status-history";
-        $res  = $http->retry(2, 300)->get($url);
+        $url = "{$baseUrl}/api/v2/packages/{$aerotrack}/status-history?language=es";
+        try {
+            $res = $http->retry(2, 300)->get($url);
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPObtenerPaquetes($idTracking, null, "Error de conexión: {$e->getMessage()}");
+        }
 
         if (!$res->ok()) {
-            Log::warning('Aeropost: respuesta no OK en status-history.', [
-                'id' => $idTracking, 'status' => $res->status(), 'body' => $res->body()
-            ]);
-            return null;
+            throw new ExceptionAPObtenerPaquetes($idTracking, $res->status(), $res->body(), 'El request de obtener historiales dio un error.');
         }
 
         $history = $res->json();
         if (!is_array($history)) {
-            Log::warning('Aeropost: status-history no es arreglo.', ['id' => $idTracking, 'payload' => $history]);
-            return null;
+            throw new ExceptionAPObtenerPaquetes($idTracking, $res->status(), $res->body(), 'El request de obtener historiales no dio error, pero viene vacio.');
         }
 
-        Log::info('Aeropost: historial obtenido.', ['id' => $idTracking, 'count' => count($history)]);
+        Log::info('[SA, OH] historiales obtenidos.', ['id' => $idTracking, 'count' => count($history)]);
         return $history;
     }
 
     /**
      * Persiste entradas de historial nuevas (según la última fecha guardada).
      *
-     * @param Tracking                                   $tracking
-     * @param array<int,array{date?:string,status?:array{description?:string},gatewayDescription?:string}> $history
-     *
+     * @param Tracking $tracking
+     * @param array $historiasAp
      * @return void
+     * @throws ExceptionAPObtenerPaquetes
      */
-    private static function nuevosHistoriales(Tracking $tracking, array $history): void
+    private static function nuevosHistoriales(Tracking $tracking, array $historiasAp): void
     {
         // última fecha registrada para este tracking
-        $ultima   = $tracking->fechaUltimoHistorial();
+        $ultima = $tracking->fechaUltimoHistorial();
         $ultimaAt = $ultima ? Carbon::parse($ultima) : $tracking->created_at->copy()->startOfDay();
+        $historiasAp = array_reverse($historiasAp); //esto porque las fechas de los historiales vienen en orden descendente, y la logica esta para que sea ascendente
 
-        foreach ($history as $state) {
+        foreach ($historiasAp as $state) {
+
             $fechaStr = Arr::get($state, 'date');
-            $status   = Arr::get($state, 'status');
-            $gateway  = Arr::get($state, 'gatewayDescription');
-
-            Log::info('Aeropost: procesando estado.', [
-                'id' => $tracking->IDTRACKING, 'date' => $fechaStr, 'status' => $status, 'gateway' => $gateway
-            ]);
+            $status = Arr::get($state, 'status');
+            $gateway = Arr::get($state, 'gatewayDescription');
 
             if (!$fechaStr || !$status) {
-                continue;
+                throw new ExceptionAPObtenerPaquetes($tracking->IDTRACKING, null, null, 'No vino la fecha correcta ni el status correcto.');
             }
 
             $fechaAt = self::parseFecha($fechaStr);
-            Log::info('Aeropost: fecha parseada.', ['ultimaAt' => $ultimaAt, 'fechaAt' => $fechaAt]);
 
             if ($fechaAt && (!$ultimaAt || $fechaAt->gt($ultimaAt))) {
                 $historial = new TrackingHistorial();
-                $historial->DESCRIPCION            = Arr::get($status, 'description', '');
-                $historial->DESCRIPCIONMODIFICADA  = '';
-                $historial->PAISESTADO             = $gateway ?? '';
-                $historial->CODIGOPOSTAL           = 99999;
-                $historial->OCULTADO               = false;
-                $historial->TIPO                   = EnumTipoHistorialTracking::AEROPOST->value;
-                $historial->created_at             = $fechaAt->format('Y-m-d H:i:s');
-                $historial->updated_at             = $fechaAt->format('Y-m-d H:i:s');
-                $historial->IDCOURIER              = $tracking->courrierNombreAId('Aeropost');
-                $historial->IDTRACKING             = $tracking->id;
+                $historial->DESCRIPCION = Arr::get($status, 'description', '');
+                $historial->DESCRIPCIONMODIFICADA = '';
+                $historial->PAISESTADO = $gateway ?? '';
+                $historial->CODIGOPOSTAL = 99999;
+                $historial->OCULTADO = false;
+                $historial->TIPO = EnumTipoHistorialTracking::AEROPOST->value;
+                $historial->created_at = $fechaAt->format('Y-m-d H:i:s');
+                $historial->updated_at = $fechaAt->format('Y-m-d H:i:s');
+                $historial->IDCOURIER = $tracking->courrierNombreAId('Aeropost');
+                $historial->IDTRACKING = $tracking->id;
                 $historial->save();
-
                 $ultimaAt = $fechaAt;
             }
         }
@@ -322,11 +315,9 @@ class ServicioAeropost
      */
     private static function parseFecha(string $fecha): ?Carbon
     {
-        try {
-            return Carbon::parse($fecha);
-        } catch (\Throwable) {
-            return null;
-        }
+        $dt = Carbon::parse($fecha);
+        $dt->setMicrosecond(0); // elimina milisegundos
+        return $dt;
     }
 
     /**
@@ -335,7 +326,7 @@ class ServicioAeropost
      * @param int $graphicStationId
      * @return string|null
      */
-    private static function mapEstadoAeropost(int $graphicStationId): ?string
+    public static function mapEstadoAeropost(int $graphicStationId): ?string
     {
         return match ($graphicStationId) {
             3 => 'Recibido Miami',
@@ -381,21 +372,21 @@ class ServicioAeropost
 
         // 3. Obtenemos el courier de nuestro idTracking gracias al regex
         $courierSeleccionado = self::ObtenerCourier($couriers, $tracking->IDTRACKING);
-        Log::info('CourierSeleccionado: '.json_encode($courierSeleccionado));
+        //Log::info('CourierSeleccionado: ' . json_encode($courierSeleccionado));
 
         // 4. Al obtener el courier, nombreTienda va a ser: Tienda de {courier}
-        $nombreTienda = 'Tienda de '.$courierSeleccionado['name'];
+        $nombreTienda = 'Tienda de ' . $courierSeleccionado['name'];
 
         // 5. Enviar el request para crear la prealerta
         try {
             $idPrealerta = self::RequestRegistrarPrealerta(3861094, $courierSeleccionado['id'], $tracking->IDTRACKING, $nombreTienda, $valor, $descripcion);
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             // # Como a veces el API de AP de registrar prealerta falla, verificar con otro endpoint y obtener el idPrealerta
             $dataGetPackage = self::ObtenerPaquete($tracking->IDTRACKING);
-            Log::info('[ServicioAeropost,RP] campo noteId: '. $dataGetPackage['noteId']);
+            Log::info('[ServicioAeropost,RP] campo noteId: ' . $dataGetPackage['noteId']);
             $idPrealerta = $dataGetPackage['noteId'];
         }
-        Log::info('[ServicioAeropost,RP] idPrealerta '.$idPrealerta);
+        //Log::info('[ServicioAeropost,RP] idPrealerta ' . $idPrealerta);
 
         // 6. Crear el trackingProveedor
         $trackingProveedor = new TrackingProveedor;
@@ -435,7 +426,7 @@ class ServicioAeropost
             return Cache::get('aeropost_access_token');
         }
 
-        Log::info('[AeroPost Config]', [
+        /*Log::info('[AeroPost Config]', [
             'grant_type' => config('services.aeropost.grant_type'),
             'scope' => config('services.aeropost.scope'),
             'username' => config('services.aeropost.username'),
@@ -445,14 +436,14 @@ class ServicioAeropost
             'url_base' => config('services.aeropost.url_base'),
             'client_id' => config('services.aeropost.client_id'),
             'client_secret' => config('services.aeropost.client_secret'),
-        ]);
+        ]);*/
 
         // 1.2 Si no, se solicita mediante el endpoint
         $urlAccesoToken = config('services.aeropost.url_auth');
 
         $headers = [
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'Authorization' => 'Basic '.base64_encode(config('services.aeropost.client_id').':'.config('services.aeropost.client_secret')),
+            'Authorization' => 'Basic ' . base64_encode(config('services.aeropost.client_id') . ':' . config('services.aeropost.client_secret')),
         ];
 
         // - Si hay error, intentarlo 2 veces mas
@@ -468,7 +459,7 @@ class ServicioAeropost
                     'gateway' => config('services.aeropost.gateway'),
                 ]);
 
-            if (! $respuesta->successful()) {
+            if (!$respuesta->successful()) {
                 $intentos++;
             } else {
                 $accessTokenRespuesta = $respuesta;
@@ -476,12 +467,12 @@ class ServicioAeropost
             }
         }
 
-        if (! $accessTokenRespuesta) {
+        if (!$accessTokenRespuesta) {
             Log::info('[ServicioAP->ObtenerTokenAcceso] No se recibio el token de acceso');
             throw new ExceptionAPTokenNoObtenido;
         }
 
-        if (! $accessTokenRespuesta['access_token'] | ! $accessTokenRespuesta['refresh_token']) {
+        if (!$accessTokenRespuesta['access_token'] | !$accessTokenRespuesta['refresh_token']) {
             Log::info('[ServicioAP->ObtenerTokenAcceso] El request fue exitoso pero no esta el campo de access_token y/o refresh_token');
             throw new ExceptionAPTokenNoObtenido('El request fue exitoso pero no esta el campo de access_token y/o refresh_token');
         }
@@ -512,9 +503,9 @@ class ServicioAeropost
         }
 
         // 2. Si no estan entonces hacer la llamada a AP API Couriers
-        $urlCourier = config('services.aeropost.url_base').'/api/couriers';
+        $urlCourier = config('services.aeropost.url_base') . '/api/couriers';
         $headers = [
-            'Authorization' => 'Bearer '.Cache::get('aeropost_access_token'),
+            'Authorization' => 'Bearer ' . Cache::get('aeropost_access_token'),
         ];
 
         // 3. Si hay un error, hacer 3 intentos mas
@@ -524,7 +515,7 @@ class ServicioAeropost
             $respuesta = Http::withHeaders($headers)->get($urlCourier, []);
 
             // cualquier status que no es 2xx
-            if (! $respuesta->successful()) {
+            if (!$respuesta->successful()) {
                 $intentos++;
             } else {
                 $couriers = $respuesta->json();
@@ -568,7 +559,7 @@ class ServicioAeropost
                 continue;
             }
 
-            if (! $regexActual) {
+            if (!$regexActual) {
                 throw new ExceptionAPCourierNoObtenido('El elemento courier no contiene el campo regex');
             }
 
@@ -583,14 +574,14 @@ class ServicioAeropost
         }
 
         // 4. Si no cumple con ninguno, obtener el courier que es Other/Default (en los docs el default es el courierId 0)
-        if (! $courierSeleccionado) {
+        if (!$courierSeleccionado) {
             $courierDefault = null;
 
             foreach ($couriers as $courier) {
                 $courierId = $courier['id'];
 
-                if (! isset($courierId)) { //isset porque si solo pongo !$courierId 0 me lo toma como false y entra cuando no deberia
-                    Log::info('[ServicioAeropost,OC] El campo id en un elemento de courier no existe'. json_encode($couriers));
+                if (!isset($courierId)) { //isset porque si solo pongo !$courierId 0 me lo toma como false y entra cuando no deberia
+                    Log::info('[ServicioAeropost,OC] El campo id en un elemento de courier no existe' . json_encode($couriers));
                     throw new ExceptionAPCourierNoObtenido('El campo id en un elemento de courier no existe');
                 }
                 if ($courierId == 0 || $courier['id'] == 9) {
@@ -599,7 +590,7 @@ class ServicioAeropost
                 }
             }
 
-            if (! $courierDefault) {
+            if (!$courierDefault) {
                 Log::info('[ServicioAeropost,OC] No se encontro el courier default');
                 throw new ExceptionAPCourierNoObtenido('No se encontro el courier default');
             }
@@ -640,10 +631,10 @@ class ServicioAeropost
             'tokenAcceso' => self::ObtenerTokenAcceso(),
         ]);*/
 
-        $url = config('services.aeropost.url_base').'/api/pre-alerts?language=en';
+        $url = config('services.aeropost.url_base') . '/api/pre-alerts?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer '.self::ObtenerTokenAcceso(),
+            'Authorization' => 'Bearer ' . self::ObtenerTokenAcceso(),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];
@@ -660,18 +651,18 @@ class ServicioAeropost
                 'description' => $descripcion,
             ]);
             // investigar que es ConnectionException
-            Log::info('[ServicioAeropost,RRP] RequestRegistrarPrealerta: '.json_encode($respuesta->json()));
+            Log::info('[ServicioAeropost,RRP] RequestRegistrarPrealerta: ' . json_encode($respuesta->json()));
         } catch (ConnectionException $e) {
             throw new ExceptionAPRequestRegistrarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
         }
         // 3. Si algo falla (porque el servidor de AP nos lo envía, ya sea error o no), lanzar excepcion
-        if (! $respuesta->successful()) {
+        if (!$respuesta->successful()) {
             // falta log
             throw new ExceptionAPRequestRegistrarPrealerta;
         }
 
         // 4. Verificar que todos los campos que necesito se encuentren (id principalmente)
-        if (! $respuesta['id']) {
+        if (!$respuesta['id']) {
             throw new ExceptionAPRequestRegistrarPrealerta(' El request se dio con exito pero no trae el campo id');
         }
 
@@ -683,14 +674,15 @@ class ServicioAeropost
      * @throws ConnectionException
      * @throws ExceptionAPRequestActualizarPrealerta
      */
-    public static function ActualizarPrealerta(int $idPrealerta, string $descripcion, float $valor, string $numeroTracking, string $nombreTienda, int $courierId, int $consigneeId): void{
+    public static function ActualizarPrealerta(int $idPrealerta, string $descripcion, float $valor, string $numeroTracking, string $nombreTienda, int $courierId, int $consigneeId): void
+    {
         // 1. Obtener el token de Acceso
         // 2. Actualizar los campos
 
-        $url = config('services.aeropost.url_base').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        $url = config('services.aeropost.url_base') . '/api/pre-alerts/' . $idPrealerta . '?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
+            'Authorization' => 'Bearer ' . self::ObtenerTokenAcceso(),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];
@@ -707,7 +699,7 @@ class ServicioAeropost
                 'description' => $descripcion,
             ]);
             // investigar que es ConnectionException
-            Log::info('[ServicioAeropost, AP] ActualizarPrealerta: '.json_encode($respuesta->json()));
+            Log::info('[ServicioAeropost, AP] ActualizarPrealerta: ' . json_encode($respuesta->json()));
         } catch (ConnectionException $e) {
             throw new ExceptionAPRequestActualizarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
         }
@@ -729,13 +721,14 @@ class ServicioAeropost
      * @throws ExceptionAPRequestEliminarPrealerta
      * @throws ExceptionAPTokenNoObtenido
      */
-    public static function EliminarPrealerta(int $idPrealerta): void {
+    public static function EliminarPrealerta(int $idPrealerta): void
+    {
         // 1. Con el $idPrealerta elimino la prealerta de aeropost
 
-        $url = config('services.aeropost.url_base').'/api/pre-alerts/' . $idPrealerta . '?language=en';
+        $url = config('services.aeropost.url_base') . '/api/pre-alerts/' . $idPrealerta . '?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
+            'Authorization' => 'Bearer ' . self::ObtenerTokenAcceso(),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];
@@ -745,7 +738,7 @@ class ServicioAeropost
             // Poner los datos necesarios
             $respuesta = Http::withHeaders($headers)->delete($url, []);
             // investigar que es ConnectionException
-            Log::info('[ServicioAeropost, EP] EliminarPrealerta: '.json_encode($respuesta->json()));
+            Log::info('[ServicioAeropost, EP] EliminarPrealerta: ' . json_encode($respuesta->json()));
         } catch (ConnectionException $e) {
             throw new ExceptionAPRequestEliminarPrealerta('No se consiguió respuesta alguna del servidor de Aeropost');
         }
@@ -759,14 +752,15 @@ class ServicioAeropost
      * @throws ExceptionAPTokenNoObtenido
      * @throws ExceptionAeropost
      */
-    public static function ObtenerPaquete(string $numeroTracking): array{
+    public static function ObtenerPaquete(string $numeroTracking): array
+    {
         // 1. Llama al API de GetPackage
         // 2. Retorna el contenido
         // # Proposito: Si se necesita toda la data llamar a esta funcion de integracion
-        $url = config('services.aeropost.url_base').'/api/v2/packages/' . $numeroTracking . '?language=en';
+        $url = config('services.aeropost.url_base') . '/api/v2/packages/' . $numeroTracking . '?language=en';
         // 1. Crear los encabezados
         $headers = [
-            'Authorization' => 'Bearer '. self::ObtenerTokenAcceso(),
+            'Authorization' => 'Bearer ' . self::ObtenerTokenAcceso(),
             'Accept' => 'application/json',
             'content-type' => 'application/json',
         ];
@@ -776,7 +770,7 @@ class ServicioAeropost
             // Poner los datos necesarios
             $respuesta = Http::withHeaders($headers)->get($url);
             // investigar que es ConnectionException
-            Log::info('[ServicioAeropost, OP] ObtenerPaquete: '.json_encode($respuesta->json()));
+            Log::info('[ServicioAeropost, OP] ObtenerPaquete: ' . json_encode($respuesta->json()));
         } catch (ConnectionException $e) {
             throw new ExceptionAeropost('No se consiguió respuesta alguna del servidor de Aeropost');
         }
@@ -788,5 +782,39 @@ class ServicioAeropost
         }
 
         return $respuesta->json();
+    }
+
+    /**
+     * @param array $trackings
+     * @return array
+     * @throws ConnectionException
+     * @throws ExceptionAPObtenerPaquetes
+     * @throws ExceptionAPTokenNoObtenido
+     */
+    public static function ObtenerPaquetesMasivos(array $trackings): array{
+        //obtener del API de Aeropost el estado de cada tracking consultado para una consulta masiva
+        $trackingsMensajes = implode(',', $trackings);
+
+        $http = self::buildHttpClient();
+        $baseUrl = rtrim((string)config('services.aeropost.url_base'), '/');
+
+        //parametro para poder filtrar por trackings
+        $paramTrackingsSearchText = 'trackingsSearchText='.$trackingsMensajes;
+
+        $url = "{$baseUrl}/api/v2/packages?{$paramTrackingsSearchText}";
+
+        try {
+            $respuesta = $http->retry(2, 300)->get($url);
+        } catch (ConnectionException $e) {
+            throw new ExceptionAPObtenerPaquetes($trackingsMensajes, null, "Error de conexión: {$e->getMessage()}");
+        }
+
+        // Si algo falla (porque el servidor de AP nos lo envía, ya sea error o no), lanzar excepcion
+        if (!$respuesta->successful()) {
+            // falta log
+            throw new ExceptionAPObtenerPaquetes($trackingsMensajes, $respuesta->status(), $respuesta->body(),'La respuesta de AP no fue exitosa para la consulta masiva.');
+        }
+
+        return $respuesta->json()['packages'];
     }
 }

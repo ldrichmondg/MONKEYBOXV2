@@ -11,6 +11,8 @@ use App\Exceptions\ExceptionAPTokenNoObtenido;
 use App\Exceptions\ExceptionPrealertaNotFound;
 use App\Exceptions\ExceptionTrackingProveedorNotFound;
 use App\Http\Requests\RequestCrearPrealerta;
+use App\Models\Enum\TipoHistorialTracking;
+use App\Models\Enum\TipoImagen;
 use App\Models\Proveedor;
 use App\Models\Tracking;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -81,7 +83,7 @@ class ServicioPrealerta
     }
 
     /**
-     * @param int $idTracking
+     * @param string $idTracking
      * @param string $descripcion
      * @param float $valor
      * @param int $idProveedor
@@ -153,9 +155,12 @@ class ServicioPrealerta
                     // - Actualizar el id de prealerta
                     $prealerta->IDPREALERTA = $idPrealerta;
 
-                    // 3.4. Si la cambiaron de AP -> ML, eliminar la prealerta de AP.
+                // 3.4. Si la cambiaron de AP -> ML, eliminar la prealerta de AP, las imagenes, peso e historiales de AP
                 } else if ($proveedor->NOMBRE == 'Aeropost') {
                     ServicioAeropost::EliminarPrealerta($prealerta->IDPREALERTA);
+                    ServicioHistorialTracking::EliminarHistorialesProveedor($tracking->id, TipoHistorialTracking::AEROPOST->value);
+                    $tracking->PESO = 0;
+                    ServicioImagenes::EliminarImagenesProveedor($tracking->id, TipoImagen::Aeropost->value);
                 }
 
                 // Actualizar el campo IDPROVEEDOR y TRACKINGPROVEEDOR de tracking proveedor
@@ -208,6 +213,9 @@ class ServicioPrealerta
 
         if($trackingProveedor->proveedor->NOMBRE == 'Aeropost'){
             ServicioAeropost::EliminarPrealerta($prealerta->IDPREALERTA);
+            ServicioHistorialTracking::EliminarHistorialesProveedor($tracking->id, TipoHistorialTracking::AEROPOST->value);
+            $tracking->PESO = 0;
+            ServicioImagenes::EliminarImagenesProveedor($tracking->id, TipoImagen::Aeropost->value);
             $prealerta->IDPREALERTA = null;
         }
 

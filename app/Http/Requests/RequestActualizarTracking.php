@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Enum\TipoDirecciones;
+use App\Models\Enum\TipoHistorialTracking;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Validator;
@@ -41,7 +42,7 @@ class RequestActualizarTracking extends FormRequest
             'historialesTracking.*.descripcionModificada' => ['nullable', 'string', 'max:370'],
             'historialesTracking.*.codigoPostal' => ['required', 'integer', 'max:100000'],
             'historialesTracking.*.ocultado' => ['required', 'boolean'],
-            'historialesTracking.*.tipo' => ['required', 'string', Rule::in(array_map(fn($case) => $case->id(), TipoDirecciones::cases())),],
+            'historialesTracking.*.tipo' => ['required', 'string', Rule::in(array_map(fn($case) => $case->id(), TipoHistorialTracking::cases())),],
             //imagenes
             'imagenes' => ['nullable', 'array'],
             'imagenes.*.id' => ['required', 'integer'],

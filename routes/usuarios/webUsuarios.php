@@ -9,6 +9,8 @@ use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
 
 // Nomenclatura a usar:
 // /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/tracking/consulta/vista', [TrackingController::class, 'ConsultaVista'])->name('tracking.consulta.vista');
+    Route::get('/tracking/consulta/json', [TrackingController::class, 'ConsultaJson'])->name('usuario.tracking.consulta.json');
     Route::post('/tracking/registro/guardar', [TrackingController::class, 'RegistroJson'])->name('usuario.tracking.registro.guardar');
     Route::get('/tracking/detalle/vista/{id}', [TrackingController::class, 'Detalle'])->name('usuario.tracking.detalle.vista');
     Route::get('/tracking/consulta/json', [TrackingController::class, 'ConsultaJson'])->name('usuario.tracking.consulta.json');
@@ -27,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tracking/actualiza/json/eliminarFactura', [TrackingController::class, 'EliminarFactura'])->name('usuario.tracking.actualiza.json.eliminarfactura');
 
     Route::post('/tracking/actualiza/json/sincronizar', [TrackingController::class, 'Sincronizar'])->name('usuario.tracking.actualiza.json.sincronizar');
+
+
 });
 
 // RUTAS CONFIGURACION
@@ -95,3 +100,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //Route::get('/cliente/consulta/json', [ClienteController::class, 'ConsultaJson'])->name('usuario.cliente.consulta.json');
     //Route::post('/usuario/registro/json', [UsuarioController::class,  'RegistroJson'])->name('usuario.usuario.registro.json');*/
 });
+
+// RUTAS IMAGENES

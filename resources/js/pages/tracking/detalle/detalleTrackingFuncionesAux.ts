@@ -254,7 +254,7 @@ export async function AccionPreartar(setTracking: React.Dispatch<React.SetStateA
 
 
 // Si presiona el btn SPR
-export async function AccionSinPrealertar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number, setMostrarDialogo: React.Dispatch<React.SetStateAction<boolean>>, setMensajeDialogo: React.Dispatch<React.SetStateAction<MensajeDialog>>) {
+export async function AccionSinPrealertar(setTracking: React.Dispatch<React.SetStateAction<TrackingCompleto>>, tracking: TrackingCompleto, ordenEstadoPresionado: number) {
     // 1. Verificar que los campos de idProveedor, descripcion y valor estén vacíos
     // 2. Solo funcionará si pasa de PDO -> SPR, osea estadoAnterior
     // 3. Consultarle al usuario si desea eliminar la prealerta.

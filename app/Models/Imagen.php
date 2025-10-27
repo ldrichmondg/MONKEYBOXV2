@@ -11,6 +11,7 @@ class Imagen extends Model
 
     protected $fillable = [
         'RUTA',
+        'TIPOIMAGEN',
         'IDTRACKING',
     ];
 

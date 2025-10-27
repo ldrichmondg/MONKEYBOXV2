@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\EventoRegistroUsuario;
+use App\Models\Imagen;
 use App\Models\User;
 use Exception;
 use Illuminate\Auth\Events\Registered;
@@ -14,7 +15,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class ServicioFiles
+class ServicioImagenes
 {
+    public static function EliminarImagenesProveedor(int $idTracking, int $tipoImagen){
+        // 1. Eliminar las imagenes de un tracking y proveedor especifico
 
+        Imagen::where('IDTRACKING', $idTracking)
+            ->where('TIPOIMAGEN', $tipoImagen)
+            ->delete();
+    }
 }

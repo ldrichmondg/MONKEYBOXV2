@@ -109,7 +109,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
             name: 'Guardar cambios',
             className: 'bg-red-400 text-white hover:bg-red-300 ',
             isActive: true,
-            onClick: () => ActualizarTrackingAux(trackingFront),
+            onClick: () => ActualizarTrackingAux(trackingFront, setActualizando),
         },
     ];
 
@@ -293,7 +293,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                 </div>
 
                 <div className="grid grid-cols-1 justify-between py-3 lg:flex lg:flex-row">
-                    <Card className="flex h-auto w-[100%] max-w-[100%] flex-col overflow-y-auto p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
+                    <Card className="flex h-auto w-[100%] max-w-[100%] flex-col p-0 lg:max-h-[70vh] lg:w-[49.5%] lg:max-w-[49.5%]">
                         <CardHeader className={'flex w-[100%] flex-row items-center justify-between border-b-2 border-gray-100 p-4'}>
                             <p className="text-md font-bold">Encabezado Tracking</p>
                             <Button className="bg-orange-400 px-5 text-sm text-white hover:bg-orange-500">
@@ -301,7 +301,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                             </Button>
                         </CardHeader>
 
-                        <CardContent className={'flex flex-col justify-between px-3 pt-0 pb-2'}>
+                        <CardContent className={'flex flex-col overflow-y-auto justify-between px-3 pt-0 pb-2'}>
                             <div className="flex w-[100%] gap-2 pb-2">
                                 <InputFloatingLabel
                                     id="descripcion"
@@ -503,13 +503,15 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                         />
                                         {trackingFront.imagenes.map((imagen) => (
                                             <div className={'relative h-40 w-40 flex-shrink-0'}>
-                                                <img
-                                                    src={typeof imagen.archivo === 'string' ? imagen.archivo : URL.createObjectURL(imagen.archivo)}
-                                                    alt="Vista previa"
-                                                    className="h-full w-full rounded-lg border border-gray-300 object-cover"
-                                                />
 
-                                                {imagen.archivoPropio && (
+                                                    <img
+                                                        src={typeof imagen.archivo === 'string' ? imagen.archivo : URL.createObjectURL(imagen.archivo)}
+                                                        alt="Vista previa"
+                                                        className="h-full w-full rounded-lg border border-gray-300 object-cover"
+                                                    />
+
+
+                                                {imagen.tipoImagen == 1 && (
                                                     <Button
                                                         className="bg-opacity-50 absolute top-1 right-1 size-8 rounded bg-orange-400 px-5 py-1 text-sm text-white hover:bg-orange-500"
                                                         onClick={() => {
@@ -1177,14 +1179,13 @@ function AgregarArchivoSeleccionado(
     let idUnico: number = -1;
 
     for (const img of tracking.imagenes) {
-        console.log(img);
         if (img.id == idUnico) idUnico--;
     }
 
     const imagen: Imagen = {
         id: idUnico,
         archivo: file,
-        archivoPropio: true,
+        tipoImagen: 1,
     };
 
     if (file) {
@@ -1212,16 +1213,19 @@ function ContactarCliente(trackingFront: TrackingCompleto) {
     }
 }
 
-async function ActualizarTrackingAux(trackingFront: TrackingCompleto) {
+async function ActualizarTrackingAux(trackingFront: TrackingCompleto, setSincronizando: React.Dispatch<React.SetStateAction<boolean>>) {
     // 1. Verificar el estado actual del tracking dicho por el trabajador
     // 2. Dependiendo del estado actual, se hacen las validaciones necesarias para saber si se puede guardar o no
 
+    setSincronizando(true);
     try {
         await ActualizarTracking(trackingFront);
         ExitoModal('Actualización Exitosa', 'Se actualizó el tracking correctamente.')
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         ErrorModal('Error al actualizar tracking', 'Hubo un error a lactualizar el tracking. Intentelo de nuevo o contacte el soporte de TI');
+    }finally {
+        setSincronizando(false);
     }
 }
 

@@ -1,17 +1,28 @@
+import { TrackingTable } from '@/types/tracking';
+import { administracionErrores, ResponseError } from '@/api/administracionErrores/administracionErrores';
+import { AppError } from '@/types/erroresExcepciones';
 
-/*
-export function ObtenerTrackingsConsultadosTable(): TrackingConsultadosTable{
+
+export async function ObtenerTrackingsConsultadosTable(): Promise<TrackingTable[]>{
     // 1. Llamar al request donde obtengo todos los trackings y sus acciones
-    // 2. Si hay un error, que lo maneje el error 500 de administrar errores
-    // 2.1. Sin embargo el catch que retorne []
+    const response = await fetch(route('usuario.tracking.consulta.json'), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+    });
 
-    try{
-        // 1. Llamar al request donde obtengo todos los trackings y sus acciones
-        const response = await fetch(route(''));
-        return [];
+    if (!response.ok) {
+        const errorResponse: ResponseError = await response.json(); //no retorna nada porque es actualizar, pero si retorna, son errores
+        errorResponse.httpStatus = response.status;
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-        return [];
+        await administracionErrores(errorResponse, 'Error al consultar trackings', false);
+        throw new AppError(errorResponse.errorApp, response.status, 'Error al consultar trackings', errorResponse.titleMessage);
     }
-}*/
+
+    // Si llegó acá es que t#do bien
+    const data = await response.json();
+    return data.trackings;
+}

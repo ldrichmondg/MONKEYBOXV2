@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Enum\TipoImagen;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -17,11 +18,15 @@ class DetalleImagenResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'archivo' => Storage::disk('do')->temporaryUrl(
+            'archivo' => $this->TIPOIMAGEN == TipoImagen::Propia->value ?
+                Storage::disk('do')->temporaryUrl(
                 $this->RUTA,
                 now()->addMinutes(10)
-            ),
-            'archivoPropio' => true, //por el momento
+                )
+                :
+                $this->RUTA
+            ,
+            'tipoImagen' => $this->TIPOIMAGEN,
         ];
     }
 }

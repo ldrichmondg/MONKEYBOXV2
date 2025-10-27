@@ -14,7 +14,7 @@ import {
     VisibilityState,
 } from '@tanstack/react-table';
 import {EliminarModal} from '@/ownComponents/modals/eliminarModal';
-import { ArrowUpDown, ChevronDown, LucideIcon, MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, LucideIcon, MoreHorizontal, RefreshCcw } from 'lucide-react';
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,11 @@ import { iconMap } from '@/lib/iconMap';
 import { TrackingTable } from '@/types/tracking';
 import { WithActions } from '@/types/table';
 import { useState } from 'react';
+import { ClienteTable } from '@/types/cliente';
+import { ObtenerClientes } from '@/api/clientes/cliente';
+import { ErrorModal } from '@/ownComponents/modals/errorModal';
+import { ObtenerTrackingsConsultadosTable } from '@/api/tracking/consultarTrackings';
+import { Spinner } from '@/ownComponents/spinner';
 
 interface Props {
     trackings: TrackingTable[];
@@ -65,9 +70,10 @@ export default function ConsultaTracking({trackings}: Props) {
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState({});
+    const [trackingsFront, setTrackings] = useState<TrackingTable[]>(trackings);
 
     const table = useReactTable({
-        data: trackings,
+        data: trackingsFront,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -85,6 +91,8 @@ export default function ConsultaTracking({trackings}: Props) {
         },
     });
 
+    const [sincronizando, setSincronizando] = useState<boolean>(false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
             <Head title="Consulta Tracking" />
@@ -95,8 +103,7 @@ export default function ConsultaTracking({trackings}: Props) {
                         <div id="HeaderTable" className="flex items-center justify-between p-4">
                             <span className="mr-2 font-semibold">Trackings</span>
 
-                            <div className="flex flex-1 items-center justify-end">
-
+                            <div className="flex flex-1 items-center justify-end gap-2">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" className="ml-1">
@@ -121,6 +128,16 @@ export default function ConsultaTracking({trackings}: Props) {
                                             })}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+
+                                <Button
+                                    className={'flex items-center border border-gray-100 bg-transparent text-base text-gray-500'}
+                                    variant="outline"
+                                    size="lg"
+                                    disabled={sincronizando}
+                                    onClick={() => SincronizarTrackings(setTrackings, setSincronizando)}
+                                >
+                                    <RefreshCcw className={sincronizando ? '!h-6 !w-6 animate-spin' : '!h-6 !w-6'} />
+                                </Button>
                             </div>
                         </div>
 
@@ -188,6 +205,7 @@ export default function ConsultaTracking({trackings}: Props) {
                 </Card>
             </div>
 
+            <Spinner isActive={sincronizando}></Spinner>
         </AppLayout>
     );
 }
@@ -359,3 +377,20 @@ const columns: ColumnDef<TrackingTable>[] = [
         },
     },
 ];
+
+
+async function SincronizarTrackings(
+    setTrackings: React.Dispatch<React.SetStateAction<TrackingTable[]>>,
+    setSincronizando: React.Dispatch<React.SetStateAction<boolean>>
+    ){
+    try {
+        setSincronizando(true);
+        setTrackings(await ObtenerTrackingsConsultadosTable());
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+        ErrorModal('Error al consultar trackings', 'Hubo un error al consultar trackings. Favor volver a intentarlo o consultar al departamento de TI');
+    } finally {
+        setSincronizando(false);
+    }
+}

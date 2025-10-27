@@ -43,7 +43,7 @@ export async function ActualizarPrealerta(prealerta: PrealertaActualizar): Promi
     return { ...prealerta, errores: [] };
 }
 
-export async function EliminarPrealertaPorTracking(numeroTracking: number): Promise<void>{
+export async function EliminarPrealertaPorTracking(numeroTracking: string): Promise<void>{
     // 1. Hacer el request donde se envia la solicitud
 
     const response = await fetch(route('usuario.prealerta.eliminar.json'), {
