@@ -50,6 +50,7 @@ class ServicioAeropost
      */
     public static function ProcesarTrackingsAeropost(array $idsTracking): void
     {
+        // ! se asume que los ids $idsTracking son todos de aeropost
         if (empty($idsTracking)) {
             Log::info('ProcesarTrackingsPrealertados: lista de IDs vacía.');
             return;
@@ -93,6 +94,7 @@ class ServicioAeropost
      */
     private static function procesarTrackingId(string $idTracking, string $baseUrl, PendingRequest $http): void
     {
+        // - Se asume que el idTracking es del proveedor aeropost. Si no lo es, va a tirar una excepción
         // Detalle del paquete
         $pkgData = self::obtenerDetallePaquete($baseUrl, $http, $idTracking);
 
@@ -147,6 +149,7 @@ class ServicioAeropost
      */
     private static function obtenerDetallePaquete(string $baseUrl, PendingRequest $http, string $idTracking): array
     {
+        //Si el paquete no existem retorna un error 404 Not Found
         $pkgUrl = "{$baseUrl}/api/v2/packages/{$idTracking}";
         try {
             $res = $http->retry(2, 300)->get($pkgUrl);

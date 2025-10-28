@@ -198,6 +198,10 @@ class TrackingController
         }
     }
 
+    /**
+     * @param RequestActualizarTracking $request
+     * @return JsonResponse|void
+     */
     public function Sincronizar(RequestActualizarTracking $request){
         // Sincronizar cambios que vengan de ParcelsApp o de Aeropost
 
@@ -208,6 +212,7 @@ class TrackingController
             return response()->json(['tracking' => (new TrackingDetalleResource($tracking))->resolve()]);
         }catch (Exception $e){
             Log::info('[TC, Sinc] error: '. $e->getMessage());
+            return response()->error('Hubo un error al sincronizar el tracking seleccionado');
         }
     }
 

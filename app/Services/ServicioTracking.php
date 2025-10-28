@@ -486,20 +486,31 @@ class ServicioTracking
     public static function Sincronizar(int $idTracking): Tracking{
         // 2. Obtener el estado sincronizado actual del tracking
         // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
-        // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+        // 2.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
+        // 2.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
 
         return DB::transaction(function () use ($idTracking) {
             // 2. Obtener el estado sincronizado actual del tracking
             $tracking = Tracking::findOrFail($idTracking);
+            $proveedor = $tracking->trackingProveedor->proveedor;
 
-            // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
-            if ($tracking->ESTADOSINCRONIZADO == 'Sin Prealertar' || $tracking->ESTADOSINCRONIZADO == 'Prealertado'){
+            // 2.1. Si el estado es SPR, se actualiza con parcelsApp
+            if ($tracking->ESTADOSINCRONIZADO == 'Sin Prealertar'){
                 ServicioParcelsApp::ProcesarTrackingsParcelsApp([$tracking->IDTRACKING]);
 
             }
-            // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+            // 2.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
+            else if ($tracking->ESTADOSINCRONIZADO == 'Prealertado'){
+                ServicioParcelsApp::ProcesarTrackingsParcelsApp([$tracking->IDTRACKING]);
+
+                if ($proveedor->NOMBRE == 'Aeropost')
+                    ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]);
+            }
+            // 2.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
             else{
-                ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]); //recibe un arreglo de idsTracking
+
+                if ($proveedor->NOMBRE == 'Aeropost')
+                    ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]); //recibe un arreglo de idsTracking
             }
 
             $tracking->refresh(); //por si actualizamos tracking o historialesTracking que se actualice los datos al modelo que ya estabamos usando
@@ -511,7 +522,7 @@ class ServicioTracking
      * @return void
      * @throws \App\Exceptions\ExceptionAPObtenerPaquetes
      */
-    public static function SincronizarProveedoresMasivo(){
+    public static function SincronizarProveedoresMasivo(): void{
         // El proposito es sincronizar todos los trackings de los proveedores (Ahorita solo AP)
         // La sincronizacion es unicamente del estado para que sea rapido
         // 1. Filtrar unicamente los trackings del proveedor Aeropost
