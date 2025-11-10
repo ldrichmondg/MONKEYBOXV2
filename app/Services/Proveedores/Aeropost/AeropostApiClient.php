@@ -392,8 +392,8 @@ class AeropostApiClient
             $paramTrackingsSearchText = 'trackingsSearchText='.$trackingsMensajes;
             $url = "{$baseUrl}/api/v2/packages?{$paramTrackingsSearchText}";
         }else{
-            //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
-            $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
+            $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
+            //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
             Log::info('[OPM] Url: ' . $url);
         }
 
@@ -437,8 +437,8 @@ class AeropostApiClient
     private function ObtenerPaquetesMasivosAux(string $baseUrl, int $pageSize, int $pageIndex, string $fechaAyer): array{
 
         // - Solo se usa la fn cuando se desean saber todos los trackings, no unos en especifico
-        //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
-        $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
+        $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
+        //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
         try {
             $respuesta = $this->http->retry(2, 300)->get($url);
         } catch (ConnectionException $e) {
