@@ -432,7 +432,7 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
                                         items={clientes}
                                         placeholder="Selec. cliente..."
                                         classNames=" !min-w-[100%] lg:w-60 p-6"
-                                        isActive={trackingFront.ordenEstatus == 1}
+                                        isActive={true}
                                         idSelect={trackingFront.idCliente}
                                         onChange={(idSeleccionado) =>
                                             ActualizarClienteYDireccion(idSeleccionado, setDireccionesFront, setCargandoDirecciones, setTracking)

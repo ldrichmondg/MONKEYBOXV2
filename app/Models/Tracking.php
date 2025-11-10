@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\Diccionarios;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -75,22 +76,6 @@ class Tracking extends Model
         'FECHAENTREGA',
     ];
 
-    /**
-     * Obtener la dirección asociada con el tracking.
-     */
-    public function direccion()
-    {
-        return $this->belongsTo(Direccion::class, 'IDDIRECCION');
-    }
-
-    /**
-     * Obtener el usuario asociado con el tracking.
-     */
-    public function usuario()
-    {
-        return $this->belongsTo(User::class, 'IDUSUARIO');
-    }
-
     public function courrierNombreAId($nombreCourrier)
     {
         $listaCourrier = Diccionarios::getDiccionario('courrier');
@@ -114,6 +99,56 @@ class Tracking extends Model
         return $ultimoEstado ? $ultimoEstado->PAISESTADO : ''; // Retorna el valor o un valor por defecto si no se encuentra
     }
 
+    public function ultimoHistorial()
+    {
+        $ultimoHistorial = $this->historialesT
+            ->sortByDesc('created_at')
+            ->first();
+        return $ultimoHistorial ?? null;
+    }
+
+    public function fechaUltimoHistorial()
+    {
+        $ultimoHistorial = $this->ultimoHistorial();
+        return $ultimoHistorial ? $ultimoHistorial->created_at : null;
+    }
+
+    public function fechaUltimaTrackingRelacionado(): Carbon
+    {
+        $ultimaFechaHistorial = $this->fechaUltimoHistorial();
+
+        if (!$ultimaFechaHistorial) {
+            return $this->updated_at;
+        }
+
+        return $ultimaFechaHistorial->gt($this->updated_at)
+            ? $ultimaFechaHistorial
+            : $this->updated_at;
+    }
+
+    public function trackingMBox(): string
+    {
+        return 'MB' . str_pad($this->id, 8, '0', STR_PAD_LEFT);
+    }
+
+
+    // Relaciones
+
+    /**
+     * Obtener la dirección asociada con el tracking.
+     */
+    public function direccion()
+    {
+        return $this->belongsTo(Direccion::class, 'IDDIRECCION');
+    }
+
+    /**
+     * Obtener el usuario asociado con el tracking.
+     */
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'IDUSUARIO');
+    }
     public function estadoMBox(): BelongsTo
     {
         return $this->belongsTo(EstadoMBox::class, 'ESTADOMBOX', 'DESCRIPCION');
@@ -127,14 +162,6 @@ class Tracking extends Model
     public function trackingProveedor(): HasOne
     {
         return $this->hasOne(TrackingProveedor::class, 'IDTRACKING', 'id');
-    }
-
-    public function fechaUltimoHistorial()
-    {
-        $ultimoHistorial = $this->historialesT
-            ->sortByDesc('created_at')
-            ->first();
-        return $ultimoHistorial ? $ultimoHistorial->created_at : null;
     }
 
     public function imagenes(): HasMany{

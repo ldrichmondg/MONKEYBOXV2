@@ -337,7 +337,8 @@ class ServicioTracking
      * @throws ExceptionAPRequestEliminarPrealerta
      * @throws ExceptionAPRequestActualizarPrealerta
      */
-    public static function ComparacionEstados(RequestActualizarTracking $request){
+    public static function ComparacionEstados(RequestActualizarTracking $request): void
+    {
         // -Comparacion de estados
         // 1. Ver el estado que trae por el usuario y obtener el trackingViejo
         // 1.1. Si el estado se mantiene SPR pero con idProveedor, valor, descripcion: crear prealerta
@@ -478,7 +479,7 @@ class ServicioTracking
         // 2. Obtener el estado sincronizado actual del tracking
         // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
         // 2.2. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
-        return self::Sincronizar($request->id);
+        return self::SincronizarUnicoTracking($request->id);
     }
 
     /**
@@ -499,7 +500,7 @@ class ServicioTracking
         return DB::transaction(function () use ($idTracking, $servicioAp) {
             // 1. Obtener el estado sincronizado actual del tracking
             $tracking = Tracking::findOrFail($idTracking);
-            $proveedor = $tracking->trackingProveedor->proveedor;
+            $proveedor = optional($tracking->trackingProveedor)->proveedor;
 
             // 1.1. Si el estado es SPR, se actualiza con parcelsApp
             if ($tracking->ESTADOSINCRONIZADO == 'Sin Prealertar'){

@@ -37,7 +37,7 @@ import * as React from 'react';
 import { iconMap } from '@/lib/iconMap';
 import { TrackingTable } from '@/types/tracking';
 import { WithActions } from '@/types/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ClienteTable } from '@/types/cliente';
 import { ObtenerClientes } from '@/api/clientes/cliente';
 import { ErrorModal } from '@/ownComponents/modals/errorModal';
@@ -92,6 +92,41 @@ export default function ConsultaTracking({trackings}: Props) {
     });
 
     const [sincronizando, setSincronizando] = useState<boolean>(false);
+
+    useEffect(() => {
+        // sincronizar cambios ya que no se van a enviar los +3500 trackings
+        let isMounted = true;
+
+        const cargar = async () => {
+            const cached = localStorage.getItem('trackings');
+
+            if (cached) {
+                const trackingsLS = JSON.parse(cached);
+                if (isMounted) setTrackings(trackingsLS);
+
+            }else{
+                // aunque los trackings esten en cache, se vuelve a sincronizar
+                setSincronizando(true);
+                try {
+                    const trackings = await SincronizarTrackings(setTrackings, setSincronizando);
+                    if (isMounted) {
+                        setTrackings(trackings);
+                    }
+                } finally {
+                    if (isMounted) setSincronizando(false);
+                }
+            }
+
+        };
+
+        cargar();
+        return () => { isMounted = false; };
+    }, []);
+
+    useEffect(() => {
+        console.log(trackingsFront)
+    }, [trackingsFront]);
+
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
@@ -205,7 +240,7 @@ export default function ConsultaTracking({trackings}: Props) {
                 </Card>
             </div>
 
-            <Spinner isActive={sincronizando}></Spinner>
+            {/*<Spinner isActive={sincronizando}></Spinner>*/}
         </AppLayout>
     );
 }
@@ -225,6 +260,30 @@ const columns: ColumnDef<TrackingTable>[] = [
         ),
         enableSorting: false,
         enableHiding: false,
+    },
+    {
+        accessorKey: 'trackingMBox',
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    T. MBox
+                    <ArrowUpDown />
+                </Button>
+            );
+        },
+        cell: ({ row }) => <div className="capitalize">{row.getValue('trackingMBox')}</div>,
+    },
+    {
+        accessorKey: 'trackingProveedor',
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    T. Proveedor
+                    <ArrowUpDown />
+                </Button>
+            );
+        },
+        cell: ({ row }) => <div className="capitalize">{row.getValue('trackingProveedor')}</div>,
     },
     {
         accessorKey: 'idTracking',
@@ -263,40 +322,28 @@ const columns: ColumnDef<TrackingTable>[] = [
         cell: ({ row }) => <div className="lowercase">{row.getValue('descripcion')}</div>,
     },
     {
-        accessorKey: 'desde',
+        accessorKey: 'ultimoHistorialTracking',
         header: ({ column }) => {
             return (
                 <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Desde
+                    Ult. Historial Tracking
                     <ArrowUpDown />
                 </Button>
             );
         },
-        cell: ({ row }) => <div className="lowercase">{row.getValue('desde')}</div>,
+        cell: ({ row }) => <div className="lowercase">{row.getValue('ultimoHistorialTracking')}</div>,
     },
     {
-        accessorKey: 'hasta',
+        accessorKey: 'ultimaActualizacion',
         header: ({ column }) => {
             return (
                 <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Hasta
+                    Ult. Actualización
                     <ArrowUpDown />
                 </Button>
             );
         },
-        cell: ({ row }) => <div className="lowercase">{row.getValue('hasta')}</div>,
-    },
-    {
-        accessorKey: 'destino',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Destino
-                    <ArrowUpDown />
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="lowercase">{row.getValue('destino')}</div>,
+        cell: ({ row }) => <div className="lowercase">{row.getValue('ultimaActualizacion')}</div>,
     },
     {
         accessorKey: 'couriers',
@@ -382,14 +429,20 @@ const columns: ColumnDef<TrackingTable>[] = [
 async function SincronizarTrackings(
     setTrackings: React.Dispatch<React.SetStateAction<TrackingTable[]>>,
     setSincronizando: React.Dispatch<React.SetStateAction<boolean>>
-    ){
+    ):Promise<TrackingTable[]>{
     try {
         setSincronizando(true);
-        setTrackings(await ObtenerTrackingsConsultadosTable());
+        const trackings = await ObtenerTrackingsConsultadosTable();
+        setTrackings(trackings);
+
+        localStorage.setItem('trackings', JSON.stringify(trackings));
+
+        return trackings;
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         ErrorModal('Error al consultar trackings', 'Hubo un error al consultar trackings. Favor volver a intentarlo o consultar al departamento de TI');
+        return [];
     } finally {
         setSincronizando(false);
     }

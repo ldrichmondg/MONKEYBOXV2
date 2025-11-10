@@ -14,14 +14,16 @@ class TrackingConsultadosTableResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $trackingProveedor = optional($this->trackingProveedor);
         return [
             'id' => $this->id,
+            'trackingMBox' => $this->trackingMBox(),
+            'trackingProveedor' => $trackingProveedor->TRACKINGPROVEEDOR ?? 'N/A',
             'idTracking' => $this->IDTRACKING,
             'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
-            'descripcion' => empty($this->DESCRIPCION) ? 'N/A' : $this->DESDE,
-            'desde' => empty($this->DESDE) ? 'N/A' : $this->DESDE,
-            'hasta' => empty($this->HASTA) ? 'N/A' : $this->HASTA,
-            'destino' => empty($this->DESTINO) ? 'N/A' : $this->DESTINO,
+            'descripcion' => optional($trackingProveedor->prealerta)->DESCRIPCION ?? 'N/A',
+            'ultimaActualizacion' => $this->fechaUltimaTrackingRelacionado()->format('d/m/y H:i'),
+            'ultimoHistorialTracking' => optional($this->ultimoHistorial())->DESCRIPCION,
             'couriers' => $this->COURIER,
             'estatus' => [
                 'descripcion' => $this->estadoMBox->DESCRIPCION,

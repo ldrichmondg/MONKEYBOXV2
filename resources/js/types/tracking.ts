@@ -9,6 +9,7 @@ import { Imagen } from '@/types/imagenes';
 export interface TrackingBase {
     id: number;
     idTracking: string;
+    trackingProveedor: string;
     nombreCliente: string;
     descripcion: string; //preguntar si esta desc. es la igual q la de prealerta
     desde: string | null;
@@ -19,7 +20,6 @@ export interface TrackingBase {
 }
 
 export interface TrackingConsultadosTable extends TrackingTable, ErroresInputs {
-    trackingProveedor: string;
     valor: number;
     proveedor: string;
     idProveedor?: number;
@@ -32,6 +32,8 @@ export interface TrackingRegistroTable extends TrackingTable {
 }
 
 export interface TrackingTable extends TrackingBase, WithActions {
+    ultimoHistorialTracking: string;
+    trackingMBox: string;
     estatus: EstatusTable;
 }
 

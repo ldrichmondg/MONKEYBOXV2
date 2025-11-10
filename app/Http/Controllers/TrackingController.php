@@ -40,8 +40,9 @@ class TrackingController
     public function ConsultaVista(): Response|RedirectResponse
     {
         try {
-            ServicioTracking::SincronizarTrackingsEncabezados();
-            $trackings = Tracking::all();
+            //ServicioTracking::SincronizarTrackingsEncabezados();
+            //$trackings = Tracking::all();
+            $trackings = [];
             return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
 
         } catch (Exception $e) {

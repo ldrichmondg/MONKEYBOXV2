@@ -220,11 +220,6 @@ class ServicioAeropost implements InterfazProveedor
             foreach ($trackings as $trackingBd) {
                 //recorro todos los trackings del request
                 foreach ($trackingsAeropost as $key => $trackingAeropost) {
-                    if ($trackingAeropost['aerotrack'] == 'MIA000044431799' && $trackingBd->IDTRACKING == 'MIA000044431799'){
-                        Log::info('Aqui esta: ' . json_encode($trackingAeropost));
-                        Log::info($trackingAeropost['courierTracking'] == $trackingBd->IDTRACKING);
-                        Log::info($trackingAeropost['aerotrack'] == $trackingBd->IDTRACKING);
-                    }
 
                     if ($trackingAeropost['courierTracking'] == $trackingBd->IDTRACKING || $trackingAeropost['aerotrack'] == $trackingBd->IDTRACKING) {
                         // 3.2. Actualizar el encabezado del tracking
@@ -274,7 +269,7 @@ class ServicioAeropost implements InterfazProveedor
                 ->get();
             $numerosTracking = [];
         } else {
-            $trackings = Tracking::whereIn('id', $numerosTracking)
+            $trackings = Tracking::whereIn('IDTRACKING', $numerosTracking)
                 ->get();
         }
 
@@ -286,14 +281,9 @@ class ServicioAeropost implements InterfazProveedor
         DB::transaction(function () use ($trackings, &$trackingsAeropost) {
             //recorro todos los trackings de la bd
             foreach ($trackings as $trackingBd) {
+
                 //recorro todos los trackings del request
                 foreach ($trackingsAeropost as $key => $trackingAeropost) {
-                    if ($trackingAeropost['aerotrack'] == 'MIA000044431799'){
-                        Log::info('Aqui esta: ' . json_encode($trackingAeropost));
-                        Log::info($trackingAeropost['courierTracking'] == $trackingBd->IDTRACKING);
-                        Log::info($trackingAeropost['aerotrack'] == $trackingBd->IDTRACKING);
-                    }
-
                     if ($trackingAeropost['courierTracking'] == $trackingBd->IDTRACKING || $trackingAeropost['aerotrack'] == $trackingBd->IDTRACKING) {
                         // 3.2. Actualizar el encabezado del tracking
                         $this->ActualizarEncabezadoTracking($trackingBd, $trackingAeropost);
@@ -557,7 +547,7 @@ class ServicioAeropost implements InterfazProveedor
     {
         // última fecha registrada para este tracking
         $ultima = $tracking->fechaUltimoHistorial();
-        $ultimaAt = $ultima ? Carbon::parse($ultima) : $tracking->created_at->copy()->startOfDay();
+        $ultimaAt = $ultima ? Carbon::parse($ultima) : Carbon::now()->subYear(); //$tracking->created_at->copy()->startOfDay() no sirve porque si se actualiza solo el encabezado, esta fecha estara despues
         $historiasAp = array_reverse($historiasAp); //esto porque las fechas de los historiales vienen en orden descendente, y la logica esta para que sea ascendente
 
         foreach ($historiasAp as $state) {

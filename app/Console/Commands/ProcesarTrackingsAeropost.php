@@ -31,19 +31,6 @@ class ProcesarTrackingsAeropost extends Command
     public function handle()
     {
         Log::info("**** Procesando COMANDO SINCRONIZACION ESTADOS DE AEROPOST ****");
-        // Obtenemos todos los IDTRACKING del proveedor Aeropost
-        /*$trackingProveedorIds = TrackingProveedor::where('IDPROVEEDOR', 1)
-            ->pluck('IDTRACKING');
-
-        // Filtramos listadoPendientes directamente en la consulta
-            $listadoPendientes = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
-            ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
-            ->whereIn('id', $trackingProveedorIds)
-            ->pluck('IDTRACKING');*/
-
-        //Log::info('[CMD, PTA]: Listas trackings: ' . json_encode($listadoPendientes));
-        //ServicioAeropost::ProcesarTrackingsAeropost($listadoPendientes->toArray());
-        //ServicioTracking::SincronizarProveedoresMasivo();
         $servicioAp = new ServicioAeropost();
         $servicioAp->SincronizarCompletoTrackings([]);
     }
