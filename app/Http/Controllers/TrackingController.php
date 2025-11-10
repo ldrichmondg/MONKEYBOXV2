@@ -40,13 +40,13 @@ class TrackingController
     public function ConsultaVista(): Response|RedirectResponse
     {
         try {
-            ServicioTracking::SincronizarProveedoresMasivo();
+            ServicioTracking::SincronizarTrackingsEncabezados();
             $trackings = Tracking::all();
             return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
-            return redirect()->route('tracking.consulta.vista')
+            return redirect()->route('dashboard')
                 ->with('error', 'Hubo un error al cargar la ventana.');
         }
     }
@@ -58,7 +58,7 @@ class TrackingController
     public function ConsultaJson(): JsonResponse
     {
         try {
-            ServicioTracking::SincronizarProveedoresMasivo();
+            ServicioTracking::SincronizarTrackingsEncabezados();
             $trackings = Tracking::all();
             return response()->json(['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
 
@@ -122,7 +122,7 @@ class TrackingController
     public function Detalle(int $id): Response|RedirectResponse // tengo que poner un request para verificar que el id del tracking existe
     {
         try {
-            $tracking = ServicioTracking::Sincronizar($id);
+            $tracking = ServicioTracking::SincronizarUnicoTracking($id);
             $tracking->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
 
             $direcciones = ModelToIdDescripcionDTO::map(Direccion::where('IDCLIENTE', $tracking->direccion->cliente->id)->get());

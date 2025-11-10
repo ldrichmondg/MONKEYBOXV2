@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 
-// Nomenclatura a usar:
-// /{modulo}/{subModulo}/{accion (vista,json,otro)}/{recursoID?}
-
 // RUTAS TRACKING
 Route::middleware(['auth', 'verified'])->group(function () {
 

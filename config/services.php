@@ -52,4 +52,16 @@ return [
         'client_secret' => env('AEROPOST_CLIENT_SECRET'),
     ],
 
+    'aeropostDev' => [
+        'grant_type' => env('AEROPOST_GRANTTYPE'),
+        'scope' =>  env('AEROPOST_SCOPE'),
+        'username' => env('AEROPOST_USERNAME_DEV'),
+        'password' => env('AEROPOST_PASSWORD_DEV'),
+        'gateway' => env('AEROPOST_GATEWAY'),
+        'url_auth' => env('AEROPOST_URL_AUTH_DEV'),
+        'url_base' =>  env('AEROPOST_URL_BASE_DEV'),
+        'client_id' => env('AEROPOST_CLIENT_ID_DEV'),
+        'client_secret' => env('AEROPOST_CLIENT_SECRET_DEV'),
+    ],
+
 ];

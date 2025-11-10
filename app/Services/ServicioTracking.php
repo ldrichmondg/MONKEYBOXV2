@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\EventoClienteEnlazadoPaquete;
 use App\Exceptions\ExceptionAPCourierNoObtenido;
 use App\Exceptions\ExceptionAPCouriersNoObtenidos;
+use App\Exceptions\ExceptionAPObtenerPaquetes;
 use App\Exceptions\ExceptionAPRequestActualizarPrealerta;
 use App\Exceptions\ExceptionAPRequestEliminarPrealerta;
 use App\Exceptions\ExceptionAPRequestRegistrarPrealerta;
@@ -26,6 +27,7 @@ use App\Models\Proveedor;
 use App\Models\Tracking;
 use App\Models\TrackingHistorial;
 use App\Models\TrackingProveedor;
+use Database\Factories\FactoryProveedores;
 use DateTime;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -43,9 +45,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\FilesystemException;
+use App\Services\Proveedores\Aeropost\ServicioAeropost;
 
 class ServicioTracking
 {
+
     private static function RetornaValorAtributo($atributos, $nombre)
     {
         foreach ($atributos as $atributo) {
@@ -478,39 +482,41 @@ class ServicioTracking
     }
 
     /**
+     *  Sincronizar unicamente un tracking
+     *
      * @param int $idTracking
      * @return Tracking
      * @throws ModelNotFoundException
-     * @throws FALTA
+     * @throws ExceptionAPObtenerPaquetes
      */
-    public static function Sincronizar(int $idTracking): Tracking{
-        // 2. Obtener el estado sincronizado actual del tracking
-        // 2.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
-        // 2.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
-        // 2.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+    public static function SincronizarUnicoTracking(int $idTracking): Tracking{
+        // 1. Obtener el estado sincronizado actual del tracking
+        // 1.1. Si el estado es SPR o PDO, se actualiza con parcelsApp
+        // 1.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
+        // 1.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+        $servicioAp = new ServicioAeropost(); // Todo: Esto debe de cambiar para que el codigo sea mas SOLID
 
-        return DB::transaction(function () use ($idTracking) {
-            // 2. Obtener el estado sincronizado actual del tracking
+        return DB::transaction(function () use ($idTracking, $servicioAp) {
+            // 1. Obtener el estado sincronizado actual del tracking
             $tracking = Tracking::findOrFail($idTracking);
             $proveedor = $tracking->trackingProveedor->proveedor;
 
-            // 2.1. Si el estado es SPR, se actualiza con parcelsApp
+            // 1.1. Si el estado es SPR, se actualiza con parcelsApp
             if ($tracking->ESTADOSINCRONIZADO == 'Sin Prealertar'){
                 ServicioParcelsApp::ProcesarTrackingsParcelsApp([$tracking->IDTRACKING]);
-
             }
-            // 2.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
+            // 1.2. Si el estado es PDO, se actualiza con parcelsApp y con Aeropost
             else if ($tracking->ESTADOSINCRONIZADO == 'Prealertado'){
                 ServicioParcelsApp::ProcesarTrackingsParcelsApp([$tracking->IDTRACKING]);
 
                 if ($proveedor->NOMBRE == 'Aeropost')
-                    ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]);
+                    $servicioAp->SincronizarCompletoTrackings([$tracking->IDTRACKING]);
             }
-            // 2.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
+            // 1.3. Si el estado es RMI en adelante (distinto a SPR o PDO), se actualiza con aeropost
             else{
 
                 if ($proveedor->NOMBRE == 'Aeropost')
-                    ServicioAeropost::ProcesarTrackingsAeropost([$tracking->IDTRACKING]); //recibe un arreglo de idsTracking
+                    $servicioAp->SincronizarCompletoTrackings([$tracking->IDTRACKING]); //recibe un arreglo de idsTracking
             }
 
             $tracking->refresh(); //por si actualizamos tracking o historialesTracking que se actualice los datos al modelo que ya estabamos usando
@@ -520,53 +526,16 @@ class ServicioTracking
 
     /**
      * @return void
-     * @throws \App\Exceptions\ExceptionAPObtenerPaquetes
      */
-    public static function SincronizarProveedoresMasivo(): void{
-        // El proposito es sincronizar todos los trackings de los proveedores (Ahorita solo AP)
-        // La sincronizacion es unicamente del estado para que sea rapido
-        // 1. Filtrar unicamente los trackings del proveedor Aeropost
-        // 2. Llamar al endpoint de Aeropost para obtener los paquetes de forma masiva
-        // 3. Actualizar cada tracking con su nuevo estado
+    public static function SincronizarTrackingsEncabezados(): void{
+        // Sincronizar los trackings de la app con los demas proveedores
+        $proveedores = [
+            'Aeropost',
+        ];
 
-
-        // 1. Filtrar unicamente los trackings del proveedor Aeropost
-        $trackingProveedorIds = TrackingProveedor::where('IDPROVEEDOR', 1)
-            ->pluck('IDTRACKING');
-
-        // Filtramos listadoPendientes directamente en la consulta
-        $listadoPendientes = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
-            ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
-            ->whereIn('id', $trackingProveedorIds)
-            ->pluck('IDTRACKING');
-
-        // 2. Llamar al endpoint de Aeropost para obtener los paquetes de forma masiva
-        $trackingsMasivos = ServicioAeropost::ObtenerPaquetesMasivos($listadoPendientes->toArray());
-
-        // 3. Actualizar cada tracking con su nuevo estado
-        $trackings = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
-            ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
-            ->whereIn('id', $trackingProveedorIds)
-            ->get();
-
-        //recorro todos los trackings de la bd
-        foreach($trackings as $trackingBd){
-            //recorro todos los trackings del request
-            foreach($trackingsMasivos as $key => $trackingMasivo){
-                if($trackingMasivo['courierTracking'] == $trackingBd->IDTRACKING){
-                    $estado = ServicioAeropost::mapEstadoAeropost($trackingMasivo['graphicStationID']);
-                    if ($trackingBd->ESTADOSINCRONIZADO == $trackingBd->ESTADOMBOX){
-                        $trackingBd->ESTADOMBOX = $estado;
-                    }
-                    $trackingBd->ESTADOSINCRONIZADO = $estado;
-                    $trackingBd->save();
-                }
-
-                // eliminar el tracking que ya se procesó
-                unset($trackingsMasivos[$key]);
-                break;
-
-            }
+        foreach ($proveedores as $nombreProveedor) {
+            $servicio = FactoryProveedores::make($nombreProveedor);
+            $servicio->SincronizarEncabezadoTrackings([]);
         }
 
     }

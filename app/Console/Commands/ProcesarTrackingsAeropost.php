@@ -2,9 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Cliente;
 use App\Models\Tracking;
 use App\Models\TrackingProveedor;
-use App\Services\ServicioAeropost;
+//use App\Services\ServicioAeropost;
+use App\Models\User;
+use App\Services\Proveedores\Aeropost\ServicioAeropost;
+use App\Services\ServicioTracking;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -28,17 +32,20 @@ class ProcesarTrackingsAeropost extends Command
     {
         Log::info("**** Procesando COMANDO SINCRONIZACION ESTADOS DE AEROPOST ****");
         // Obtenemos todos los IDTRACKING del proveedor Aeropost
-        $trackingProveedorIds = TrackingProveedor::where('IDPROVEEDOR', 1)
+        /*$trackingProveedorIds = TrackingProveedor::where('IDPROVEEDOR', 1)
             ->pluck('IDTRACKING');
 
         // Filtramos listadoPendientes directamente en la consulta
             $listadoPendientes = Tracking::where('ESTADOSINCRONIZADO', 'Prealertado')->orWhere('ESTADOSINCRONIZADO', 'Recibido Miami')
             ->orWhere('ESTADOSINCRONIZADO', 'Tránsito a CR') ->orWhere('ESTADOSINCRONIZADO', 'Proceso Aduanas') ->orWhere('ESTADOSINCRONIZADO', 'Oficinas MB')
             ->whereIn('id', $trackingProveedorIds)
-            ->pluck('IDTRACKING');
+            ->pluck('IDTRACKING');*/
 
-        Log::info('CMD: Listas trackings: ' . json_encode($listadoPendientes));
-        ServicioAeropost::ProcesarTrackingsAeropost($listadoPendientes->toArray());
+        //Log::info('[CMD, PTA]: Listas trackings: ' . json_encode($listadoPendientes));
+        //ServicioAeropost::ProcesarTrackingsAeropost($listadoPendientes->toArray());
+        //ServicioTracking::SincronizarProveedoresMasivo();
+        $servicioAp = new ServicioAeropost();
+        $servicioAp->SincronizarCompletoTrackings([]);
     }
 
 }

@@ -107,4 +107,8 @@ class User extends Model implements AuthenticatableContract, CanResetPassword
     {
         return mb_substr($this->APELLIDOS, 0, 1, 'UTF-8').'.';
     }
+
+    public function cliente(): HasOne{
+        return $this->hasOne(Cliente::class, 'IDUSUARIO', 'id');
+    }
 }

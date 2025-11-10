@@ -26,7 +26,6 @@ class ServicioMiLocker
         // 1. Crear el tracking proveedor
         // 2. Crear la prealerta
 
-        Log::info('ENTRADA V1');
         // - Verificar si ya existe un trackingProveedor con ese idTracking
         $trackingProveedor = TrackingProveedor::where('IDTRACKING', $idTracking)->first();
 
