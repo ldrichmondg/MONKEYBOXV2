@@ -50,8 +50,8 @@ class ServicioAeropost implements InterfazProveedor
         // 4. Al obtener el courier, nombreTienda va a ser: Tienda de {courier}
         // 5. Enviar el request para crear la prealerta
         // 5.1. Si da error 500, hacer el req de solicitar paquete para ver si nos envio un falso positivo (nos dice que no se guardo cuando si, esto lo hace RequestRegistrarPrealerta)
-        // 6. Crear el trackingProveedor
-        // 7. Crear la prealerta
+        // 6. Crear/Actualizar el trackingProveedor
+        // 7. Crear/Actualizar la prealerta
 
         // 3. Obtenemos el courier de nuestro idTracking gracias al regex
         $courierSeleccionado = self::ObtenerCourier($tracking->IDTRACKING);
@@ -70,14 +70,20 @@ class ServicioAeropost implements InterfazProveedor
         }
         //Log::info('[ServicioAeropost,RP] idPrealerta ' . $idPrealerta);
 
-        // 6. Crear el trackingProveedor
-        $trackingProveedor = new TrackingProveedor;
+        // 6. Crear/Actualizar el trackingProveedor
+        if ($tracking->trackingProveedor)
+            $trackingProveedor = $tracking->trackingProveedor;
+        else
+            $trackingProveedor = new TrackingProveedor;
         $trackingProveedor->IDTRACKING = $tracking->id;
         $trackingProveedor->IDPROVEEDOR = $idProveedor;
         $trackingProveedor->save();
 
-        // 7. Crear la prealerta
-        $prealerta = new Prealerta;
+        // 7. Crear/Actualizar la prealerta
+        if ($trackingProveedor->prealerta)
+            $prealerta = $trackingProveedor->prealerta;
+        else
+            $prealerta = new Prealerta;
         $prealerta->DESCRIPCION = $descripcion;
         $prealerta->VALOR = $valor;
         $prealerta->NOMBRETIENDA = $nombreTienda;
@@ -206,13 +212,13 @@ class ServicioAeropost implements InterfazProveedor
                 ->get();
             $numerosTracking = [];
         } else {
-            $trackings = Tracking::whereIn('id', $numerosTracking)
+            $trackings = Tracking::whereIn('IDTRACKING', $numerosTracking)
                 ->get();
         }
 
         // 3. Sincronizar los encabezados de los trackings
         // 3.1. Obtener todos los paquetes que hay en Aeropost
-        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking);
+        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking, true);
         Log::info('[SA, SET] CANTIDAD TODOS: ' . count($trackingsAeropost));
 
         DB::transaction(function () use ($trackings, &$trackingsAeropost) {
@@ -242,11 +248,13 @@ class ServicioAeropost implements InterfazProveedor
 
     /**
      * @param array $numerosTracking
+     * @param bool $fechaAyer
      * @return void
      * @throws ExceptionAPObtenerPaquetes
      */
-    public function SincronizarCompletoTrackings(array $numerosTracking): void
+    public function SincronizarCompletoTrackings(array $numerosTracking, bool $fechaAyer = true): void
     {
+        // - Si $fechaAyer es false, se importan todos los paquetes
         // - Si se envian numeros de tracking se interpreta como que solo se desean actualizar esos numeros de tracking.
         // 1. Verificar si se pasaron numeros de tracking
         // 2. Si no se pasaron numeros de tracking, entonces llamamos todos los paquetes de aeropost
@@ -275,7 +283,7 @@ class ServicioAeropost implements InterfazProveedor
 
         // 3. Sincronizar completo los trackings
         // 3.1. Obtener todos los paquetes que hay en Aeropost
-        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking);
+        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking, $fechaAyer);
         Log::info('[SA, SCT] CANTIDAD TODOS: ' . count($trackingsAeropost));
 
         DB::transaction(function () use ($trackings, &$trackingsAeropost) {
@@ -435,7 +443,7 @@ class ServicioAeropost implements InterfazProveedor
             //si el courierTracking viene vacio, ponerle IDTRACKING el AEROTRACK
             if($trackingAeropost['courierTracking'] == ''){
                 $idTracking = $trackingAeropost['aerotrack'];
-                Log::info('[RTNE] COURIER VACIO' . json_encode($trackingAeropost));
+                //Log::info('[RTNE] COURIER VACIO' . json_encode($trackingAeropost));
             }else
                 $idTracking = $trackingAeropost['courierTracking'];
 
@@ -474,7 +482,12 @@ class ServicioAeropost implements InterfazProveedor
                 ?? $ids[$trackingAeropost['aerotrack']]
                 ?? null;
 
+            $trackingProveedor = trim($trackingAeropost['aerotrack']) !== ''
+                ? $trackingAeropost['aerotrack']
+                : null;
+
             if (!$trackingId) {
+                Log::info('[SA, RTNE] No SE encontro el trackingid'. json_encode($trackingAeropost));
                 continue; // seguridad por si no se encuentra
             }
 
@@ -482,6 +495,7 @@ class ServicioAeropost implements InterfazProveedor
             $trackingProveedor = TrackingProveedor::create([
                 'IDTRACKING' => $trackingId,
                 'IDPROVEEDOR' => 1,
+                'TRACKINGPROVEEDOR' => $trackingProveedor,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

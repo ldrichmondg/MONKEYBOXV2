@@ -40,7 +40,7 @@ class TrackingDetalleResource extends JsonResource
             'estatusSincronizado' => $this->ESTADOSINCRONIZADO,
             'ordenEstatusSincronizado' => $this->estadoSincronizado->ORDEN,
             'historialesTracking' => HistorialTrackingDetalleResource::collection($this->whenLoaded('historialesT'))->resolve(),
-            'trackingProveedor' => optional($this->trackingProveedor)->TRACKINGPROVEEDOR,
+            'trackingProveedor' => optional($this->trackingProveedor)->TRACKINGPROVEEDOR ?? 'N/A',
             'valorPrealerta' => optional(optional($this->trackingProveedor)->prealerta)->VALOR !== null ? $this->trackingProveedor->prealerta->VALOR : 1.5,
             'descripcion' => optional(optional($this->trackingProveedor)->prealerta)->DESCRIPCION !== null ? $this->trackingProveedor->prealerta->DESCRIPCION : '',
             'cliente' => (new DetalleClienteTrackingResource($cliente))->resolve(),

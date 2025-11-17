@@ -20,6 +20,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use \App\Services\Proveedores\Aeropost\ServicioAeropost;
 
 class ServicioPrealerta
 {
@@ -52,6 +53,7 @@ class ServicioPrealerta
 
             // 1. Obtenemos el tracking mediante el idTracking
             $tracking = Tracking::where('IDTRACKING', $request->idTracking)->firstOrFail();
+            $servicioAp = new ServicioAeropost();
 
             // 2. Revisamos si el tracking tiene un estado = a 'sin prealertar'
             // 3. Si es igual, entonces se prealerta, sino se mantiene el estado que tiene
@@ -64,7 +66,7 @@ class ServicioPrealerta
 
             // 4.1. Si es Aeropost, se llama a AeropostService
             if ($proveedor->NOMBRE == 'Aeropost') {
-                ServicioAeropost::RegistrarPrealerta($tracking, $request->valor, $request->descripcion, $request->idProveedor);
+                $servicioAp->RegistrarPrealerta($tracking, $request->valor, $request->descripcion, $request->idProveedor);
 
                 // 4.2. Si es MiLocker, se llama a MiLockerService (donde solo se retorna la prealerta rapido)
             } elseif ($proveedor->NOMBRE == 'MiLocker') {
@@ -113,6 +115,7 @@ class ServicioPrealerta
 
             // 1. Obtener el Tracking desde la BD
             $tracking = Tracking::where('IDTRACKING',$idTracking)->firstOrFail();
+            $servicioAp = new ServicioAeropost();
 
             // 2. Obtener el registro de la prealerta. (EX#1: No hay trackingProveedor EX#2: no hay prealerta)
             if (!$tracking->trackingProveedor) {
@@ -131,7 +134,7 @@ class ServicioPrealerta
 
                 // 3.1. Si el proveedor es el mismo y es aeropost, actualizar la prealerta
                 if ($proveedor->NOMBRE == 'Aeropost') {
-                    ServicioAeropost::ActualizarPrealerta($prealerta->IDPREALERTA, $descripcion, $valor, $tracking->IDTRACKING, $prealerta->NOMBRETIENDA, $prealerta->IDCOURIER, 3861094); // en DEV es 2979592
+                    $servicioAp->ActualizarPrealerta($prealerta->IDPREALERTA, $descripcion, $valor, $tracking->IDTRACKING, $prealerta->NOMBRETIENDA, $prealerta->IDCOURIER, 3861094); // en DEV es 2979592
                 } // 3.2. Si el proveedor es el mismo y es ML, actualizar la prealerta
                 else if ($proveedor->NOMBRE == 'MiLocker') {
                     ServicioMiLocker::ActualizarPrealerta($prealerta->IDPREALERTA, $descripcion, $valor, $tracking->IDTRACKING, $prealerta->NOMBRETIENDA, $prealerta->IDCOURIER, 3861094);
@@ -141,23 +144,12 @@ class ServicioPrealerta
 
                 // 3.3. Si la cambiaron de ML -> AP, crear la prealerta.
                 if ($proveedor->NOMBRE == 'MiLocker') {
-                    $couriers = ServicioAeropost::ObtenerCouriers();
-
-                    // - Obtenemos el courier de nuestro idTracking gracias al regex
-                    $courierSeleccionado = ServicioAeropost::ObtenerCourier($couriers, $tracking->IDTRACKING);
-
-                    // - Al obtener el courier, nombreTienda va a ser: Tienda de {courier}
-                    $nombreTienda = 'Tienda de ' . $courierSeleccionado['name'];
-
-                    // - Enviar el request para crear la prealerta
-                    $idPrealerta = ServicioAeropost::RequestRegistrarPrealerta(3861094, $courierSeleccionado['id'], $tracking->IDTRACKING, $nombreTienda, $valor, $descripcion);
-
-                    // - Actualizar el id de prealerta
-                    $prealerta->IDPREALERTA = $idPrealerta;
+                    // - Enviar el request para crear la prealerta (dentro de la fncion modifica objetos trackingProveedor y Prealerta)
+                    $prealerta = $servicioAp->RegistrarPrealerta($tracking, $valor, $descripcion, $idProveedor);
 
                 // 3.4. Si la cambiaron de AP -> ML, eliminar la prealerta de AP, las imagenes, peso e historiales de AP
                 } else if ($proveedor->NOMBRE == 'Aeropost') {
-                    ServicioAeropost::EliminarPrealerta($prealerta->IDPREALERTA);
+                    $servicioAp->EliminarPrealerta($prealerta->IDPREALERTA);
                     ServicioHistorialTracking::EliminarHistorialesProveedor($tracking->id, TipoHistorialTracking::AEROPOST->value);
                     $tracking->PESO = 0;
                     ServicioImagenes::EliminarImagenesProveedor($tracking->id, TipoImagen::Aeropost->value);
@@ -182,12 +174,13 @@ class ServicioPrealerta
     }
 
     /**
-     * @param int $numeroTracking
+     * @param string $numeroTracking
      * @return void
+     * @throws ConnectionException
+     * @throws ExceptionAPRequestEliminarPrealerta
+     * @throws ExceptionAPTokenNoObtenido
      * @throws ExceptionPrealertaNotFound
      * @throws ExceptionTrackingProveedorNotFound
-     * @throws QueryException
-     * @throws ExceptionAPRequestEliminarPrealerta
      */
     public static function EliminarPrealerta(string $numeroTracking): void{
         // 1. obtener el tracking por el $numeroTracking
@@ -197,6 +190,7 @@ class ServicioPrealerta
 
         // 1. obtener el tracking por el $numeroTracking
         $tracking = Tracking::where('IDTRACKING', $numeroTracking)->firstOrFail();
+        $servicioAp = new ServicioAeropost();
 
         // 2. Obtener la prealerta y trackingProveedor (EX: Verificar si ambas existen antes de borrar)
         if (!$tracking->trackingProveedor) {
@@ -212,7 +206,7 @@ class ServicioPrealerta
         $prealerta = $trackingProveedor->prealerta;
 
         if($trackingProveedor->proveedor->NOMBRE == 'Aeropost'){
-            ServicioAeropost::EliminarPrealerta($prealerta->IDPREALERTA);
+            $servicioAp->EliminarPrealerta($prealerta->IDPREALERTA);
             ServicioHistorialTracking::EliminarHistorialesProveedor($tracking->id, TipoHistorialTracking::AEROPOST->value);
             $tracking->PESO = 0;
             ServicioImagenes::EliminarImagenesProveedor($tracking->id, TipoImagen::Aeropost->value);

@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
                 SeederCantones::class,
                 SeederDistritos::class,
                 SeederClientesMasivo::class,
+                SeederOperaciones::class,
+                SeederClienteNoAsignado::class,
                 // NO AGREGAR SEEDERREALES POR NINGUN MOTIVO AH NO SER QUE SE DESEE ALIMENTAR TODOS LOS CLIENTES DESDE CERO
                 // PONER SEEDERCLIENTES REALES REPRESENTA UN PELIGRO PARA LA BD
             ]

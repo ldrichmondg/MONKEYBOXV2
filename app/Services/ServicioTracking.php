@@ -466,6 +466,7 @@ class ServicioTracking
      * @param RequestActualizarTracking $request
      * @return Tracking
      * @throws FALTA
+     * @throws ExceptionAPObtenerPaquetes
      */
     public static function ActualizarSincronizar(RequestActualizarTracking $request): Tracking{
         // 1. Primero hay que actualizar el tracking para que esté justo como lo digitó el usuario

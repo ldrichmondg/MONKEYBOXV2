@@ -131,6 +131,13 @@ export default function DetalleTracking({ tracking, clientes, direcciones }: Pro
         //console.log(mostrarDialog);
     }, [mostrarDialog]);
 
+    useEffect(() => {
+        const sincronizarTracking =  async() => {
+            await SincronizarCambiosAux(trackingFront, setTracking, setActualizando);
+        };
+        sincronizarTracking();
+    }, []);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
             <Head title={trackingFront.idTracking} />

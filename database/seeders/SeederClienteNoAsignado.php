@@ -49,6 +49,6 @@ class SeederClienteNoAsignado extends Seeder
             'PAISESTADO' => 'Cartago, Paraíso',
         ];
 
-        $direccionObj = Direccion::create($direccion);
+        Direccion::create($direccion);
     }
 }

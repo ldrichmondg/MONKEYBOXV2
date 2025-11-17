@@ -118,12 +118,13 @@ class TrackingController
     /**
      * @param int $id
      * @return Response|RedirectResponse
-     * @throws ModelNotFoundException
+     * @throws ModelNotFoundException|\App\Exceptions\ExceptionAPObtenerPaquetes
      */
     public function Detalle(int $id): Response|RedirectResponse // tengo que poner un request para verificar que el id del tracking existe
     {
         try {
-            $tracking = ServicioTracking::SincronizarUnicoTracking($id);
+            //$tracking = ServicioTracking::SincronizarUnicoTracking($id);
+            $tracking = Tracking::findOrFail($id);
             $tracking->load(['historialesT', 'imagenes', 'estadoMBox', 'estadoSincronizado']);
 
             $direcciones = ModelToIdDescripcionDTO::map(Direccion::where('IDCLIENTE', $tracking->direccion->cliente->id)->get());

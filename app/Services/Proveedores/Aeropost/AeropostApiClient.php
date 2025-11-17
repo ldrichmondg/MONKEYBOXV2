@@ -27,7 +27,6 @@ class AeropostApiClient
      */
     public function __construct(bool $fake = false)
     {
-        Log::info('Fake: ' . json_encode($fake));
         // es para probar el ambito de prueba de Aeropost
         if ($fake){
             $this->baseUrl = config('services.aeropostDev.url_base');
@@ -369,10 +368,45 @@ class AeropostApiClient
 
     /**
      * @param array $trackings
+     * @param int $pageSize
+     * @param int $pageIndex
+     * @param bool $soloAyer
+     * @return string
+     */
+    private function CrearUrlObtenerPaquetes(
+        array $trackings,
+        int $pageSize,
+        int $pageIndex,
+        bool $soloAyer
+    ): string {
+        // - crear Url dependiendo de los parametros para obtener paquetes
+        $baseUrl = rtrim((string)$this->baseUrl, '/');
+
+        // Si vienen trackings → usar searchText y NO usar greaterThan
+        if (count($trackings) != 0) {
+            $trackingsMensajes = implode(',', $trackings);
+            return "{$baseUrl}/api/v2/packages?trackingsSearchText={$trackingsMensajes}";
+        }
+
+        // Consulta general sin trackings
+        $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
+
+        if ($soloAyer) {
+            $fechaAyer = now()->subDay()->format('Y-m-d');
+            $url .= "&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
+        }
+
+        return $url;
+    }
+
+
+    /**
+     * @param array $trackings
+     * @param bool $soloAyer
      * @return array
      * @throws ExceptionAPObtenerPaquetes
      */
-    public function ObtenerPaquetesMasivos(array $trackings): array{
+    public function ObtenerPaquetesMasivos(array $trackings, bool $soloAyer): array{
         //obtener del API de Aeropost el estado de cada tracking consultado para una consulta masiva
         // Si trae trackings, se usa el parametro trackingsSearchText, sino se traen todos
         // 1. Obtener el total items del primer request
@@ -382,20 +416,11 @@ class AeropostApiClient
 
         $pageSize = 150;
         $pageIndex = 0;
-        $baseUrl = rtrim((string)$this->baseUrl, '/');
-        $fechaAyer = now()->subDay()->format('Y-m-d');
 
-        if(count($trackings) != 0){
-            $trackingsMensajes = implode(',', $trackings);
-
-            //parametro para poder filtrar por trackings
-            $paramTrackingsSearchText = 'trackingsSearchText='.$trackingsMensajes;
-            $url = "{$baseUrl}/api/v2/packages?{$paramTrackingsSearchText}";
-        }else{
-            $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
-            //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
-            Log::info('[OPM] Url: ' . $url);
-        }
+        // Primera llamada
+        $url = $this->CrearUrlObtenerPaquetes($trackings, $pageSize, $pageIndex, $soloAyer);
+        $trackingsMensajes = implode(',', $trackings);
+        Log::info('[OPM] Url: ' . $url);
 
         try {
             $respuesta = $this->http->retry(2, 300)->get($url);
@@ -414,10 +439,16 @@ class AeropostApiClient
         $totalItems = $respuestaDatos['totalItems'];
         $cantidadPages = ceil($totalItems / $pageSize);
 
+        // 4. Si la cant. de pages = 1, entonces retorna el resultado
+        if($cantidadPages == 1){
+            return $paquetes;
+        }
+
         // 4. llamar a los demás pages que hagan falta
         for($pageIndex = 1; $pageIndex <= $cantidadPages; $pageIndex++){
-            Log::info('TRAYENDO DEL PAGEINDEX #'. $pageIndex);
-            $paquetesPagina = $this->ObtenerPaquetesMasivosAux($baseUrl, $pageSize, $pageIndex, $fechaAyer);
+            Log::info('TRAYENDO DEL PAGEINDEX #'. $pageIndex . " del total de pages: #".$cantidadPages);
+            $url = $this->CrearUrlObtenerPaquetes($trackings, $pageSize, $pageIndex, $soloAyer);
+            $paquetesPagina = $this->ObtenerPaquetesMasivosAux($url);
 
             // Agregarlos al array principal
             $paquetes = array_merge($paquetes, $paquetesPagina);
@@ -427,18 +458,12 @@ class AeropostApiClient
     }
 
     /**
-     * @param string $baseUrl
-     * @param int $pageSize
-     * @param int $pageIndex
-     * @param string $fechaAyer
+     * @param string $url
      * @return array
      * @throws ExceptionAPObtenerPaquetes
      */
-    private function ObtenerPaquetesMasivosAux(string $baseUrl, int $pageSize, int $pageIndex, string $fechaAyer): array{
+    private function ObtenerPaquetesMasivosAux(string $url): array{
 
-        // - Solo se usa la fn cuando se desean saber todos los trackings, no unos en especifico
-        $url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}";
-        //$url = "{$baseUrl}/api/v2/packages?pageSize={$pageSize}&pageIndex={$pageIndex}&lastUpdate=greaterThan~{$fechaAyer} 00:00:00";
         try {
             $respuesta = $this->http->retry(2, 300)->get($url);
         } catch (ConnectionException $e) {
