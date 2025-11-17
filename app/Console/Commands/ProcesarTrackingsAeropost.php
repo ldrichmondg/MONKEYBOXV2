@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Exceptions\ExceptionAPObtenerPaquetes;
+use App\Jobs\JobProcesarTrackingsAp;
 use App\Models\Cliente;
 use App\Models\Tracking;
 use App\Models\TrackingProveedor;
@@ -30,14 +31,16 @@ class ProcesarTrackingsAeropost extends Command
     protected $description = 'Command description';
 
     /**
-     * @throws ExceptionAPObtenerPaquetes
      */
     public function handle()
     {
-        Log::info("**** Procesando COMANDO SINCRONIZACION ESTADOS DE AEROPOST ****");
-        $soloAyer = $this->option('solo-ayer'); // true o false
-        $servicioAp = new ServicioAeropost();
-        $servicioAp->SincronizarCompletoTrackings([], $soloAyer);
-    }
+        $soloAyer = $this->option('solo-ayer');
 
+        Log::info("**** Despachando Job de sincronización Aeropost *****");
+
+        JobProcesarTrackingsAp::dispatch($soloAyer);
+
+        Log::info("Job despachado.");
+
+    }
 }

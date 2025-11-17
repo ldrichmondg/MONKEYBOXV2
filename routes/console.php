@@ -3,4 +3,4 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('app:procesar-tracking-aeropost')->everyFiveMinutes();
+Schedule::command('app:procesar-tracking-aeropost')->everyFiveMinutes()->withoutOverlapping();

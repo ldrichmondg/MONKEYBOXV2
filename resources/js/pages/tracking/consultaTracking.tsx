@@ -1,4 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
+import { EliminarModal } from '@/ownComponents/modals/eliminarModal';
 import { type BreadcrumbItem, ButtonHeader } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -13,10 +14,9 @@ import {
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
-import {EliminarModal} from '@/ownComponents/modals/eliminarModal';
 import { ArrowUpDown, ChevronDown, LucideIcon, MoreHorizontal, RefreshCcw } from 'lucide-react';
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -34,15 +34,12 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import * as React from 'react';
 
-import { iconMap } from '@/lib/iconMap';
-import { TrackingTable } from '@/types/tracking';
-import { WithActions } from '@/types/table';
-import { useEffect, useState } from 'react';
-import { ClienteTable } from '@/types/cliente';
-import { ObtenerClientes } from '@/api/clientes/cliente';
-import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { ObtenerTrackingsConsultadosTable } from '@/api/tracking/consultarTrackings';
-import { Spinner } from '@/ownComponents/spinner';
+import { iconMap } from '@/lib/iconMap';
+import { ErrorModal } from '@/ownComponents/modals/errorModal';
+import { WithActions } from '@/types/table';
+import { TrackingTable } from '@/types/tracking';
+import { useEffect, useState } from 'react';
 
 interface Props {
     trackings: TrackingTable[];
@@ -65,7 +62,7 @@ const buttons: ButtonHeader[] = [
     },
 ];
 
-export default function ConsultaTracking({trackings}: Props) {
+export default function ConsultaTracking({ trackings }: Props) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -103,30 +100,28 @@ export default function ConsultaTracking({trackings}: Props) {
             if (cached) {
                 const trackingsLS = JSON.parse(cached);
                 if (isMounted) setTrackings(trackingsLS);
-
-            }else{
-                // aunque los trackings esten en cache, se vuelve a sincronizar
-                setSincronizando(true);
-                try {
-                    const trackings = await SincronizarTrackings(setTrackings, setSincronizando);
-                    if (isMounted) {
-                        setTrackings(trackings);
-                    }
-                } finally {
-                    if (isMounted) setSincronizando(false);
-                }
             }
-
+            // aunque los trackings esten en cache, se vuelve a sincronizar
+            setSincronizando(true);
+            try {
+                const trackings = await SincronizarTrackings(setTrackings, setSincronizando);
+                if (isMounted) {
+                    setTrackings(trackings);
+                }
+            } finally {
+                if (isMounted) setSincronizando(false);
+            }
         };
 
         cargar();
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
-        console.log(trackingsFront)
+        console.log(trackingsFront);
     }, [trackingsFront]);
-
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
@@ -188,16 +183,14 @@ export default function ConsultaTracking({trackings}: Props) {
                                                             ? null
                                                             : flexRender(header.column.columnDef.header, header.getContext())}
 
-                                                        {header.id != 'actions' && header.id != 'select' ?
-
+                                                        {header.id != 'actions' && header.id != 'select' ? (
                                                             <Input
                                                                 placeholder=""
                                                                 value={(table.getColumn(header.id)?.getFilterValue() as string) ?? ''}
                                                                 onChange={(event) => table.getColumn(header.id)?.setFilterValue(event.target.value)}
-                                                                className="max-w-sm "
-                                                            /> : null
-                                                        }
-
+                                                                className="max-w-sm"
+                                                            />
+                                                        ) : null}
                                                     </TableHead>
                                                 );
                                             })}
@@ -223,7 +216,7 @@ export default function ConsultaTracking({trackings}: Props) {
                                 </TableBody>
                             </Table>
                         </div>
-                        <div className="flex items-center justify-end space-x-2 py-4 px-4">
+                        <div className="flex items-center justify-end space-x-2 px-4 py-4">
                             <div className="flex-1 text-sm text-muted-foreground">
                                 {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
                             </div>
@@ -301,7 +294,7 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorKey: 'nombreCliente',
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Cliente
                     <ArrowUpDown />
                 </Button>
@@ -313,7 +306,7 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorKey: 'descripcion',
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Descripcion
                     <ArrowUpDown />
                 </Button>
@@ -325,7 +318,7 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorKey: 'ultimoHistorialTracking',
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Ult. Historial Tracking
                     <ArrowUpDown />
                 </Button>
@@ -337,7 +330,7 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorKey: 'ultimaActualizacion',
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Ult. Actualización
                     <ArrowUpDown />
                 </Button>
@@ -349,7 +342,7 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorKey: 'couriers',
         header: ({ column }) => {
             return (
-                <Button variant="ghost" className="text-gray-500 " onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Couriers
                     <ArrowUpDown />
                 </Button>
@@ -362,29 +355,19 @@ const columns: ColumnDef<TrackingTable>[] = [
         accessorFn: (row) => row.estatus.descripcion,
         header: ({ column }) => {
             return (
-                <Button
-                    variant="ghost"
-                    className="text-gray-500"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                >
+                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                     Estatus
                     <ArrowUpDown />
                 </Button>
             );
         },
         cell: ({ row }) => (
-            <Badge
-                className={"lowercase text-white " + row.original.estatus.colorClass}
-                variant="secondary"
-            >
+            <Badge className={'text-white lowercase ' + row.original.estatus.colorClass} variant="secondary">
                 {row.original.estatus.descripcion}
             </Badge>
         ),
         filterFn: (row, columnId, filterValue) => {
-            return row
-                .getValue(columnId)
-                ?.toLowerCase()
-                .includes(filterValue.toLowerCase());
+            return row.getValue(columnId)?.toLowerCase().includes(filterValue.toLowerCase());
         },
     },
 
@@ -395,7 +378,6 @@ const columns: ColumnDef<TrackingTable>[] = [
             const actions = (row.original as WithActions).actions ?? [];
 
             return (
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -406,18 +388,26 @@ const columns: ColumnDef<TrackingTable>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         {actions.map((action, index) => {
-                            const LucideIcon: LucideIcon = iconMap[action.icon ?? "UserPlus"]
-                            const needsModal = (action.actionMessage != undefined && action.actionModalTitle != undefined);
+                            const LucideIcon: LucideIcon = iconMap[action.icon ?? 'UserPlus'];
+                            const needsModal = action.actionMessage != undefined && action.actionModalTitle != undefined;
                             return (
-                                <DropdownMenuItem key={index} onClick={async () => { if(needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined) EliminarModal({ description: action.actionMessage, titulo: action.actionModalTitle, route: action.route})} }>
+                                <DropdownMenuItem
+                                    key={index}
+                                    onClick={async () => {
+                                        if (needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined)
+                                            EliminarModal({
+                                                description: action.actionMessage,
+                                                titulo: action.actionModalTitle,
+                                                route: action.route,
+                                            });
+                                    }}
+                                >
                                     <Link href={!needsModal ? action.route : ''} className="flex flex-nowrap items-center gap-2">
-                                        <LucideIcon/> <span>{action.descripcion} </span>
+                                        <LucideIcon /> <span>{action.descripcion} </span>
                                     </Link>
                                 </DropdownMenuItem>
-                            )
-                        })
-                        }
-
+                            );
+                        })}
                     </DropdownMenuContent>
                 </DropdownMenu>
             );
@@ -425,11 +415,10 @@ const columns: ColumnDef<TrackingTable>[] = [
     },
 ];
 
-
 async function SincronizarTrackings(
     setTrackings: React.Dispatch<React.SetStateAction<TrackingTable[]>>,
-    setSincronizando: React.Dispatch<React.SetStateAction<boolean>>
-    ):Promise<TrackingTable[]>{
+    setSincronizando: React.Dispatch<React.SetStateAction<boolean>>,
+): Promise<TrackingTable[]> {
     try {
         setSincronizando(true);
         const trackings = await ObtenerTrackingsConsultadosTable();
@@ -441,7 +430,10 @@ async function SincronizarTrackings(
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-        ErrorModal('Error al consultar trackings', 'Hubo un error al consultar trackings. Favor volver a intentarlo o consultar al departamento de TI');
+        ErrorModal(
+            'Error al consultar trackings',
+            'Hubo un error al consultar trackings. Favor volver a intentarlo o consultar al departamento de TI',
+        );
         return [];
     } finally {
         setSincronizando(false);
