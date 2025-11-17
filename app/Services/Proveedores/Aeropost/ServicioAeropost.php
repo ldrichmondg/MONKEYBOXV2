@@ -218,7 +218,7 @@ class ServicioAeropost implements InterfazProveedor
 
         // 3. Sincronizar los encabezados de los trackings
         // 3.1. Obtener todos los paquetes que hay en Aeropost
-        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking, false);
+        $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking, true);
         Log::info('[SA, SET] CANTIDAD TODOS: ' . count($trackingsAeropost));
 
         DB::transaction(function () use ($trackings, &$trackingsAeropost) {
