@@ -358,6 +358,14 @@ class ServicioAeropost implements InterfazProveedor
             $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
             $trackingProveedor->save();
         }
+        //
+
+        $trackingProveedor = TrackingProveedor::where('IDTRACKING', $trackingBd->id)->firstOrFail();
+        $prealerta = $trackingProveedor->prealerta;
+        $prealerta->IDPREALERTA = $trackingAeropost['noteId'] != 0 ?  $trackingAeropost['noteId'] : null;
+        $prealerta->save();
+        $trackingProveedor->save();
+
     }
 
     /**
@@ -441,10 +449,10 @@ class ServicioAeropost implements InterfazProveedor
             }
 
             //si el courierTracking viene vacio, ponerle IDTRACKING el AEROTRACK
-            if($trackingAeropost['courierTracking'] == ''){
+            if ($trackingAeropost['courierTracking'] == '') {
                 $idTracking = $trackingAeropost['aerotrack'];
                 //Log::info('[RTNE] COURIER VACIO' . json_encode($trackingAeropost));
-            }else
+            } else
                 $idTracking = $trackingAeropost['courierTracking'];
 
             // Armar array de Trackings
@@ -487,7 +495,7 @@ class ServicioAeropost implements InterfazProveedor
                 : null;
 
             if (!$trackingId) {
-                Log::info('[SA, RTNE] No SE encontro el trackingid'. json_encode($trackingAeropost));
+                Log::info('[SA, RTNE] No SE encontro el trackingid' . json_encode($trackingAeropost));
                 continue; // seguridad por si no se encuentra
             }
 
@@ -507,6 +515,7 @@ class ServicioAeropost implements InterfazProveedor
                 'IDCOURIER' => 0,
                 'NOMBRETIENDA' => 'TIENDA DE',
                 'IDTRACKINGPROVEEDOR' => $trackingProveedor->id,
+                'IDPREALERTA' => $trackingAeropost['noteId'] != 0 ? $trackingAeropost['noteId'] : null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

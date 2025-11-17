@@ -91,6 +91,7 @@ export default function ConsultaTracking({ trackings }: Props) {
     const [sincronizando, setSincronizando] = useState<boolean>(false);
 
     useEffect(() => {
+
         // sincronizar cambios ya que no se van a enviar los +3500 trackings
         let isMounted = true;
 
@@ -127,13 +128,106 @@ export default function ConsultaTracking({ trackings }: Props) {
         <AppLayout breadcrumbs={breadcrumbs} buttons={buttons}>
             <Head title="Consulta Tracking" />
 
-            <div className="flex w-[100%] items-center justify-center">
-                <Card className="w-[95%] p-0 md:my-3 lg:my-5">
+            <div className="flex flex-col w-[100%] items-center justify-center">
+                <div className={'w-[95%] flex px-0 py-3 gap-3'}>
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('sin prealertar')
+                        }
+                        variant="outline"
+                    >
+                        SR
+                        <Badge className={'bg-pink-300 flex items-center justify-center'} >
+                            {trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Sin Registrar').length}
+                        </Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('prealertado')
+                        }
+                        variant="outline"
+                    >
+                        PDO
+                        <Badge className={'bg-yellow-400 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Prealertado').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('recibido miami')
+                        }
+                        variant="outline"
+                    >
+                        RMI
+                        <Badge className={'bg-sky-400 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Recibido Miami').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('tránsito a cr')
+                        }
+                        variant="outline"
+                    >
+                        TCR
+                        <Badge className={'bg-blue-400 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Tránsito a CR').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('proceso aduanas')
+                        }
+                        variant="outline"
+                    >
+                        PA
+                        <Badge className={'bg-gray-400 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Proceso Aduanas').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('oficinas mb')
+                        }
+                        variant="outline"
+                    >
+                        OMB
+                        <Badge className={'bg-black flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Oficinas MB').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('entregado')
+                        }
+                        variant="outline"
+                    >
+                        EN
+                        <Badge className={'bg-purple-300 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Entregado').length}</Badge>
+
+                    </Button>
+
+                    <Button
+                        onClick={() => table.getColumn('estatus')?.setFilterValue('facturado')
+                        }
+                        variant="outline"
+                    >
+                        FDO
+                        <Badge className={'bg-green-400 flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Facturado').length}</Badge>
+
+                    </Button>
+                </div>
+
+                <Card className="w-[95%] p-0 md:mb-3 lg:mb-5">
                     <div className="w-[100%]">
                         <div id="HeaderTable" className="flex items-center justify-between p-4">
                             <span className="mr-2 font-semibold">Trackings</span>
 
                             <div className="flex flex-1 items-center justify-end gap-2">
+
+                                <Button
+                                    className={'cursor-default'}
+                                    variant="outline"
+                                >
+                                    Sin asignar
+                                    <Badge className={'bg-black flex items-center justify-center'}>{trackingsFront.filter((tracking) => tracking.nombreCliente == 'Usuario NoAsignado').length}</Badge>
+
+                                </Button>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" className="ml-1">
