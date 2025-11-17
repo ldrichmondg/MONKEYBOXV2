@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { EliminarModal } from '@/ownComponents/modals/eliminarModal';
-import { type BreadcrumbItem, ButtonHeader } from '@/types';
+import { type BreadcrumbItem, ButtonHeader, ComboBoxItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
     ColumnDef,
@@ -40,9 +40,11 @@ import { ErrorModal } from '@/ownComponents/modals/errorModal';
 import { WithActions } from '@/types/table';
 import { TrackingTable } from '@/types/tracking';
 import { useEffect, useState } from 'react';
+import { ComboboxMultiple } from '@/ownComponents/comboboxMultiple';
 
 interface Props {
     trackings: TrackingTable[];
+    clientes: ComboBoxItem[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,7 +64,7 @@ const buttons: ButtonHeader[] = [
     },
 ];
 
-export default function ConsultaTracking({ trackings }: Props) {
+export default function ConsultaTracking({ trackings, clientes }: Props) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -90,7 +92,7 @@ export default function ConsultaTracking({ trackings }: Props) {
 
     const [sincronizando, setSincronizando] = useState<boolean>(false);
 
-    useEffect(() => {
+    /*useEffect(() => {
 
         // sincronizar cambios ya que no se van a enviar los +3500 trackings
         let isMounted = true;
@@ -118,7 +120,7 @@ export default function ConsultaTracking({ trackings }: Props) {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, []);*/
 
     useEffect(() => {
         console.log(trackingsFront);
@@ -277,12 +279,27 @@ export default function ConsultaTracking({ trackings }: Props) {
                                                             ? null
                                                             : flexRender(header.column.columnDef.header, header.getContext())}
 
-                                                        {header.id != 'actions' && header.id != 'select' ? (
+                                                        {header.id != 'actions' && header.id != 'select' && header.id != 'nombreCliente' ? (
                                                             <Input
                                                                 placeholder=""
                                                                 value={(table.getColumn(header.id)?.getFilterValue() as string) ?? ''}
                                                                 onChange={(event) => table.getColumn(header.id)?.setFilterValue(event.target.value)}
                                                                 className="max-w-sm"
+                                                            />
+                                                        ) : null}
+
+                                                        {header.id == 'nombreCliente' ? (
+                                                            <ComboboxMultiple
+                                                                items={clientes}
+                                                                className={'min-w-[170px]'}
+                                                                onChange={(ids) => {
+                                                                    const textoClientes: string[] = [];
+                                                                    for(const id of ids) {
+                                                                        textoClientes.push(clientes.find((c) => c.id == id)?.descripcion as string);
+                                                                    }
+
+                                                                    table.getColumn(header.id)?.setFilterValue(textoClientes.join(', '));
+                                                                }}
                                                             />
                                                         ) : null}
                                                     </TableHead>

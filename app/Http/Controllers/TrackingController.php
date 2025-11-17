@@ -43,7 +43,7 @@ class TrackingController
             //ServicioTracking::SincronizarTrackingsEncabezados();
             //$trackings = Tracking::all();
             $trackings = [];
-            return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
+            return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve()]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
