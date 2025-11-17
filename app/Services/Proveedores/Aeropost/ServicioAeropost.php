@@ -358,13 +358,13 @@ class ServicioAeropost implements InterfazProveedor
             $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
             $trackingProveedor->save();
         }
-        //
+        //Lo de abajo es para importar el idPrealerta, pero ya lo resolvi
 
-        $trackingProveedor = TrackingProveedor::where('IDTRACKING', $trackingBd->id)->firstOrFail();
+        /*$trackingProveedor = TrackingProveedor::where('IDTRACKING', $trackingBd->id)->firstOrFail();
         $prealerta = $trackingProveedor->prealerta;
         $prealerta->IDPREALERTA = $trackingAeropost['noteId'] != 0 ?  $trackingAeropost['noteId'] : null;
         $prealerta->save();
-        $trackingProveedor->save();
+        $trackingProveedor->save();*/
 
     }
 
