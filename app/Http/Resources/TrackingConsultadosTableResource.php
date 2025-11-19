@@ -14,20 +14,25 @@ class TrackingConsultadosTableResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $trackingProveedor = optional($this->trackingProveedor);
+        $tp = $this->trackingProveedor; // ya viene eager loaded
+        $prealerta = $tp ? $tp->prealerta : null;
+        $ultimoHistorial = $this->ultimoHistorial; // eager loaded
+        $direccionCliente = $this->direccion ? ($this->direccion->cliente ? $this->direccion->cliente->usuario : null) : null;
+        $estado = $this->estadoMBox;
+
         return [
             'id' => $this->id,
             'trackingMBox' => $this->trackingMBox(),
-            'trackingProveedor' => $trackingProveedor->TRACKINGPROVEEDOR ?? 'N/A',
+            'trackingProveedor' => $tp ? $tp->TRACKINGPROVEEDOR : 'N/A',
             'idTracking' => $this->IDTRACKING,
-            'nombreCliente' => $this->direccion->cliente->usuario->nombreCompletoDosApellidos(),
-            'descripcion' => optional($trackingProveedor->prealerta)->DESCRIPCION ?? 'N/A',
-            'ultimaActualizacion' => $this->fechaUltimaTrackingRelacionado()->format('d/m/y H:i'),
-            'ultimoHistorialTracking' => optional($this->ultimoHistorial())->DESCRIPCION,
+            'nombreCliente' => $direccionCliente ? $direccionCliente->nombreCompletoDosApellidos() : 'N/A',
+            'descripcion' => $prealerta ? $prealerta->DESCRIPCION : 'N/A',
+            'ultimaActualizacion' => ($this->fechaUltimaTrackingRelacionado() ?? $this->updated_at)->format('d/m/y H:i'),
+            'ultimoHistorialTracking' => $ultimoHistorial ? $ultimoHistorial->DESCRIPCION : null,
             'couriers' => $this->COURIER,
             'estatus' => [
-                'descripcion' => $this->estadoMBox->DESCRIPCION,
-                'colorClass' => $this->estadoMBox->COLORCLASS,
+                'descripcion' => $estado ? $estado->DESCRIPCION : null,
+                'colorClass' => $estado ? $estado->COLORCLASS : null,
             ],
             'actions' => [
                 [

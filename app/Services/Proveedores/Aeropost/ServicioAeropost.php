@@ -198,7 +198,8 @@ class ServicioAeropost implements InterfazProveedor
         // 2. Si no se pasaron numeros de tracking, entonces llamamos todos los paquetes de aeropost
         // 3. Sincronizar los encabezados de los trackings
         // 3.1. Obtener todos los paquetes que hay en Aeropost
-        // 4. Si sobran trackings, hay que crearlos nuevos con el clienteDefault
+        // 4. Crear un mapa de trackingAeropost para buscar en O(1)
+        // 5. Si sobran trackings, hay que crearlos nuevos con el clienteDefault
 
         // 1. Verificar si se pasaron numeros de tracking
         if ($numerosTracking == null || count($numerosTracking) == 0) {
@@ -212,36 +213,55 @@ class ServicioAeropost implements InterfazProveedor
                 ->get();
             $numerosTracking = [];
         } else {
-            $trackings = Tracking::whereIn('IDTRACKING', $numerosTracking)
+
+            $trackings = Tracking::with('trackingProveedor') //porque se usa trackingProveedor en encabezado
+                ->whereIn('IDTRACKING', $numerosTracking)
                 ->get();
         }
 
         // 3. Sincronizar los encabezados de los trackings
         // 3.1. Obtener todos los paquetes que hay en Aeropost
         $trackingsAeropost = $this->apiClient->ObtenerPaquetesMasivos($numerosTracking, true);
+
         Log::info('[SA, SET] CANTIDAD TODOS: ' . count($trackingsAeropost));
 
-        DB::transaction(function () use ($trackings, &$trackingsAeropost) {
-            //recorro todos los trackings de la bd
-            foreach ($trackings as $trackingBd) {
-                //recorro todos los trackings del request
-                foreach ($trackingsAeropost as $key => $trackingAeropost) {
+        DB::transaction(function () use ($trackings, $trackingsAeropost) {
 
-                    if ($trackingAeropost['courierTracking'] == $trackingBd->IDTRACKING || $trackingAeropost['aerotrack'] == $trackingBd->IDTRACKING) {
-                        // 3.2. Actualizar el encabezado del tracking
-                        $this->ActualizarEncabezadoTracking($trackingBd, $trackingAeropost);
+            // 4. Crear un mapa de trackingAeropost para buscar en O(1)
+            $map = [];
 
-                        // eliminar el trackingAeropost que ya se procesó
-                        unset($trackingsAeropost[$key]);
-                        break;
-                    }
-
+            foreach ($trackingsAeropost as $trackingAeropost) {
+                if (!empty($trackingAeropost['courierTracking'])) {
+                    $map[$trackingAeropost['courierTracking']] = $trackingAeropost;
+                }
+                else if (!empty($trackingAeropost['aerotrack'])) {
+                    $map[$trackingAeropost['aerotrack']] = $trackingAeropost;
                 }
             }
 
-            Log::info('CANTIDAD SIN REG: ' . count($trackingsAeropost));
-            // 4. Si sobran trackings, hay que crearlos nuevos con el clienteDefault
-            $this->RegistrarTrackingsNoExistentes($trackingsAeropost);
+            // Recorrer trackings de BD y actualizar si existe en el mapa
+            $revisados = 0;
+            foreach ($trackings as $trackingBd) {
+
+                $id = $trackingBd->IDTRACKING;
+
+                if (isset($map[$id])) {
+
+                    //validar si los campos son iguales
+                    if($this->CambiosEncabezado($trackingBd ,$map[$id])){
+                        $revisados++;
+                        $this->ActualizarEncabezadoTracking($trackingBd, $map[$id]);
+                    }
+
+                    // eliminar del mapa para saber qué no se usó
+                    unset($map[$id]);
+                }
+            }
+            // Lo que queda en el mapa → son nuevos
+            Log::info('CANTIDAD SIN REG: ' . count($map) . ' REVISADOS: ' . $revisados);
+
+            // 5. Si sobran trackings, hay que crearlos nuevos con el clienteDefault
+            $this->RegistrarTrackingsNoExistentes(array_values($map));
         });
 
     }
@@ -277,7 +297,8 @@ class ServicioAeropost implements InterfazProveedor
                 ->get();
             $numerosTracking = [];
         } else {
-            $trackings = Tracking::whereIn('IDTRACKING', $numerosTracking)
+            $trackings = Tracking::with('trackingProveedor') //porque se usa trackingProveedor en encabezado
+            ->whereIn('IDTRACKING', $numerosTracking)
                 ->get();
         }
 
@@ -354,17 +375,10 @@ class ServicioAeropost implements InterfazProveedor
 
         // 4. Actualizar el aeroTrack
         if ($aerotrack) {
-            $trackingProveedor = TrackingProveedor::where('IDTRACKING', $trackingBd->id)->firstOrFail();
+            $trackingProveedor = $trackingBd->trackingProveedor;
             $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
             $trackingProveedor->save();
         }
-        //Lo de abajo es para importar el idPrealerta, pero ya lo resolvi
-
-        /*$trackingProveedor = TrackingProveedor::where('IDTRACKING', $trackingBd->id)->firstOrFail();
-        $prealerta = $trackingProveedor->prealerta;
-        $prealerta->IDPREALERTA = $trackingAeropost['noteId'] != 0 ?  $trackingAeropost['noteId'] : null;
-        $prealerta->save();
-        $trackingProveedor->save();*/
 
     }
 
@@ -523,6 +537,47 @@ class ServicioAeropost implements InterfazProveedor
 
         // 6. Insertar masivamente Prealerta
         Prealerta::insert($dataPre);
+
+    }
+
+    /**
+     * @param Tracking $trackingBd
+     * @param array $trackingAeropost
+     * @return bool
+     */
+    private function CambiosEncabezado(Tracking $trackingBd, array $trackingAeropost): bool{
+        // - Si algun campo es distinto, pasar true, sino false
+        // 1. Validar los campos del encabezado
+
+        $estado = $this->mapEstadoAeropost($trackingAeropost['graphicStationID']);
+        $aerotrack = Arr::get($trackingAeropost, 'aerotrack');
+        $weightKilos = Arr::get($trackingAeropost, 'weightKilos');
+
+        if ($estado == null) {
+            throw new ExceptionAPObtenerPaquetes($trackingBd->IDTRACKING);
+        }
+
+        if (blank($weightKilos)) {
+            throw new ExceptionAPObtenerPaquetes($trackingBd->IDTRACKING);
+        }
+
+        //Log::info('TrackingAP: estado->'. $estado . ' aerotrack->'. $aerotrack . ' kilos->'. $weightKilos . ' TrackingBD: estado->'. $trackingBd->ESTADOSINCRONIZADO . ' aerotrack->'. $trackingBd->trackingProveedor->TRACKINGPROVEEDOR . ' peso->' . $trackingBd->PESO);
+
+        // 1. Validar los campos del encabezado
+        if ($estado == $trackingBd->ESTADOSINCRONIZADO
+            && round($weightKilos, 3) == $trackingBd->PESO //3 es la precision
+        ) {
+            //revisar el aerotrack (se hace por separado por si el paquete que viene es una prealerta)
+            if ($aerotrack &&
+                $trackingBd->trackingProveedor->TRACKINGPROVEEDOR == $aerotrack
+            ) {
+                return false;
+            }else
+                return true;
+
+        }else
+            return true;
+
 
     }
 

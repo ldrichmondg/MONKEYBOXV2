@@ -10,6 +10,7 @@ use App\Http\Requests\RequestActualizarTrackingEliminarFactura;
 use App\Http\Requests\RequestActualizarTrackingSubirFactura;
 use App\Http\Requests\RequestTrackingRegistro;
 use App\Http\Resources\ClientesComboboxItemsResource;
+use App\Http\Resources\TrackingConsultadosTablePropioResource;
 use App\Http\Resources\TrackingConsultadosTableResource;
 use App\Http\Resources\TrackingDetalleResource;
 use App\Http\Resources\TrackingSinPreealertarResource;
@@ -43,7 +44,7 @@ class TrackingController
             //ServicioTracking::SincronizarTrackingsEncabezados();
             //$trackings = Tracking::all();
             $trackings = [];
-            return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::all())->resolve()]);
+            return Inertia::render('tracking/consultaTracking', ['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve(), 'clientes' => ClientesComboboxItemsResource::collection(Cliente::with('usuario', 'direccionPrincipal')->get())->resolve()]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaVista] error:' . $e);
@@ -59,9 +60,21 @@ class TrackingController
     public function ConsultaJson(): JsonResponse
     {
         try {
+            $start = microtime(true);
             ServicioTracking::SincronizarTrackingsEncabezados();
-            $trackings = Tracking::all();
-            return response()->json(['trackings' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
+            $end = microtime(true);
+            Log::info("Tiempo sincronizar trackings: " . ($end - $start));
+
+            $trackings = Tracking::with([
+                'trackingProveedor.prealerta',
+                'direccion.cliente.usuario',
+                'estadoMBox',
+                'ultimoHistorial',
+            ])->get(); //esto es eager loading: sin esto el resource hace problema del query N + 1 problem
+
+            $trackingCollection = TrackingConsultadosTablePropioResource::toArrayCollection($trackings);
+
+            return response()->json(['trackings' => $trackingCollection]);
 
         } catch (Exception $e) {
             Log::error('[TrackingController->ConsultaJson] error:' . $e);

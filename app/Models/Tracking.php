@@ -99,17 +99,15 @@ class Tracking extends Model
         return $ultimoEstado ? $ultimoEstado->PAISESTADO : ''; // Retorna el valor o un valor por defecto si no se encuentra
     }
 
-    public function ultimoHistorial()
+    public function ultimoHistorial(): HasOne
     {
-        $ultimoHistorial = $this->historialesT
-            ->sortByDesc('created_at')
-            ->first();
-        return $ultimoHistorial ?? null;
+        return $this->hasOne(TrackingHistorial::class, 'IDTRACKING', 'id')
+            ->latest('created_at');
     }
 
     public function fechaUltimoHistorial()
     {
-        $ultimoHistorial = $this->ultimoHistorial();
+        $ultimoHistorial = $this->ultimoHistorial;
         return $ultimoHistorial ? $ultimoHistorial->created_at : null;
     }
 

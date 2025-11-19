@@ -34,7 +34,7 @@ class ClienteController extends Controller
      */
     public function ConsultaVista(): Response|RedirectResponse{
         try {
-            $clientes = Cliente::all();
+            $clientes = Cliente::with('usuario', 'direccionPrincipal')->get();
             return Inertia::render('cliente/consultaCliente',  ['clientes' => (ConsultaClienteResource::collection($clientes))->resolve()]);
         }catch (Exception $e){
             Log::info($e->getMessage());
