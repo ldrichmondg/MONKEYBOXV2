@@ -137,9 +137,9 @@ export default function ConsultaTracking({ trackings, clientes }: Props) {
                         }
                         variant="outline"
                     >
-                        SR
+                        SPR
                         <Badge className={'bg-pink-300 flex items-center justify-center'} >
-                            {trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Sin Registrar').length}
+                            {trackingsFront.filter((tracking) => tracking.estatus.descripcion == 'Sin Prealertar').length}
                         </Badge>
 
                     </Button>

@@ -338,8 +338,8 @@ class ServicioAeropost implements InterfazProveedor
             throw new ExceptionAPObtenerPaquetes($trackingBd->IDTRACKING);
         }
 
-        // 2. Actualizar estado
-        if ($trackingBd->ESTADOSINCRONIZADO == $trackingBd->ESTADOMBOX) {
+        // 2. Actualizar estado (Si es EN o FDO solo editar el sincronizado)
+        if ($trackingBd->ESTADOSINCRONIZADO == $trackingBd->ESTADOMBOX || $trackingBd->ESTADOMBOX != 'Entregado' || $trackingBd->ESTADOMBOX != 'Facturado') {
             $trackingBd->ESTADOMBOX = $estado;
         }
         $trackingBd->ESTADOSINCRONIZADO = $estado;
