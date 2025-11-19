@@ -208,8 +208,11 @@ class ServicioAeropost implements InterfazProveedor
                 ->pluck('IDTRACKING');
 
             // Filtramos listadoPendientes directamente en la consulta
-            $trackings = Tracking::whereNotIn('ESTADOSINCRONIZADO', ['Entregado', 'Facturado'])
-                ->whereIn('id', $trackingProveedorIds)
+            $trackings = Tracking::where(function($q) use ($trackingProveedorIds) {
+                $q->whereIn('id', $trackingProveedorIds)
+                    ->whereNotIn('ESTADOSINCRONIZADO', ['Entregado', 'Facturado']);
+            })
+                ->orWhere('ESTADOSINCRONIZADO', 'Sin Prealertar') //porque no trae los sin Prealertar. RAZON: Si un paquete se SPR y despues AP me lo trae, aqui no agarro ese tracking, entonces al registrar me dara error
                 ->get();
             $numerosTracking = [];
         } else {
