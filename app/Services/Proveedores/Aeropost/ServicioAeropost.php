@@ -234,19 +234,21 @@ class ServicioAeropost implements InterfazProveedor
             $map = [];
 
             foreach ($trackingsAeropost as $trackingAeropost) {
-                if (!empty($trackingAeropost['courierTracking'])) {
-                    $map[strtoupper($trackingAeropost['courierTracking'])] = $trackingAeropost;
-                }
-                else if (!empty($trackingAeropost['aerotrack'])) {
-                    $map[strtoupper($trackingAeropost['aerotrack'])] = $trackingAeropost;
-                }
+                $key = strtoupper(trim(
+                    $trackingAeropost['courierTracking']
+                    ?? $trackingAeropost['aerotrack']
+                    ?? ''
+                ));
+
+                if ($key != '')
+                    $map[$key] = $trackingAeropost;
             }
 
             // Recorrer trackings de BD y actualizar si existe en el mapa
             $revisados = 0;
             foreach ($trackings as $trackingBd) {
 
-                $id = strtoupper($trackingBd->IDTRACKING); //t#do tiene que estar en mayuscula
+                $id = strtoupper(trim($trackingBd->IDTRACKING)); //t#do tiene que estar en mayuscula
 
                 if (isset($map[$id])) {
 
@@ -470,7 +472,7 @@ class ServicioAeropost implements InterfazProveedor
 
         // 2. Llenar el tracking, prealerta, y trackingProveedor
         foreach ($trackingsAeropost as $trackingAeropost) {
-            Log::info('[SA, RTNE] TrackingID '. $trackingAeropost['courierTracking']);
+            Log::info('[SA, RTNE] TrackingID: '. $trackingAeropost['courierTracking']);
             $estado = $this->mapEstadoAeropost($trackingAeropost['graphicStationID']);
 
             if ($estado === null) {
