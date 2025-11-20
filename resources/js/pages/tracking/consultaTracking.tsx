@@ -92,7 +92,7 @@ export default function ConsultaTracking({ trackings, clientes }: Props) {
 
     const [sincronizando, setSincronizando] = useState<boolean>(false);
 
-    /*useEffect(() => {
+    useEffect(() => {
 
         // sincronizar cambios ya que no se van a enviar los +3500 trackings
         let isMounted = true;
@@ -120,7 +120,7 @@ export default function ConsultaTracking({ trackings, clientes }: Props) {
         return () => {
             isMounted = false;
         };
-    }, []);*/
+    }, []);
 
     useEffect(() => {
         console.log(trackingsFront);
