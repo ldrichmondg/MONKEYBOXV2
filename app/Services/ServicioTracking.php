@@ -104,7 +104,7 @@ class ServicioTracking
 
             $tracking = new Tracking;
             $tracking->IDAPI = $datosRespuesta['uuid'] ?? 0; // por si ponemos despues el UUID
-            $tracking->IDTRACKING = $shipment['trackingId'];
+            $tracking->IDTRACKING = strtoupper($shipment['trackingId']); //se pone en mayuscula
             $tracking->DESCRIPCION = null;
             $tracking->DESDE = ServicioTracking::RetornaValorAtributo($attributes, 'from') ?? '';
             $tracking->HASTA = ServicioTracking::RetornaValorAtributo($attributes, 'to') ?? '';

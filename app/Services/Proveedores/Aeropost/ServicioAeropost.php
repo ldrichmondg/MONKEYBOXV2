@@ -235,10 +235,10 @@ class ServicioAeropost implements InterfazProveedor
 
             foreach ($trackingsAeropost as $trackingAeropost) {
                 if (!empty($trackingAeropost['courierTracking'])) {
-                    $map[$trackingAeropost['courierTracking']] = $trackingAeropost;
+                    $map[strtoupper($trackingAeropost['courierTracking'])] = $trackingAeropost;
                 }
                 else if (!empty($trackingAeropost['aerotrack'])) {
-                    $map[$trackingAeropost['aerotrack']] = $trackingAeropost;
+                    $map[strtoupper($trackingAeropost['aerotrack'])] = $trackingAeropost;
                 }
             }
 
@@ -246,7 +246,7 @@ class ServicioAeropost implements InterfazProveedor
             $revisados = 0;
             foreach ($trackings as $trackingBd) {
 
-                $id = $trackingBd->IDTRACKING;
+                $id = strtoupper($trackingBd->IDTRACKING); //t#do tiene que estar en mayuscula
 
                 if (isset($map[$id])) {
 
@@ -470,6 +470,7 @@ class ServicioAeropost implements InterfazProveedor
 
         // 2. Llenar el tracking, prealerta, y trackingProveedor
         foreach ($trackingsAeropost as $trackingAeropost) {
+            Log::info('[SA, RTNE] TrackingID '. $trackingAeropost['courierTracking']);
             $estado = $this->mapEstadoAeropost($trackingAeropost['graphicStationID']);
 
             if ($estado === null) {
@@ -486,7 +487,7 @@ class ServicioAeropost implements InterfazProveedor
             // Armar array de Trackings
             $dataTracking[] = [
                 'IDAPI' => 0,
-                'IDTRACKING' => $idTracking,
+                'IDTRACKING' => strtoupper($idTracking),
                 'DESCRIPCION' => $trackingAeropost['description'],
                 'DESDE' => '',
                 'HASTA' => '',
@@ -576,7 +577,9 @@ class ServicioAeropost implements InterfazProveedor
             throw new ExceptionAPObtenerPaquetes($trackingBd->IDTRACKING);
         }
 
-        //Log::info('TrackingAP: estado->'. $estado . ' aerotrack->'. $aerotrack . ' kilos->'. $weightKilos . ' TrackingBD: estado->'. $trackingBd->ESTADOSINCRONIZADO . ' aerotrack->'. $trackingBd->trackingProveedor->TRACKINGPROVEEDOR . ' peso->' . $trackingBd->PESO);
+        /*if($trackingAeropost['courierTracking'] == 'gfus01017728674304'){
+            Log::info('TrackingAP: estado->'. $estado . ' aerotrack->'. $aerotrack . ' kilos->'. $weightKilos . ' TrackingBD: estado->'. $trackingBd->ESTADOSINCRONIZADO . ' aerotrack->'. $trackingBd->trackingProveedor->TRACKINGPROVEEDOR . ' peso->' . $trackingBd->PESO);
+        }*/
 
         // 1. Validar los campos del encabezado
         if ($estado == $trackingBd->ESTADOSINCRONIZADO
