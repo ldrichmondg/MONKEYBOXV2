@@ -208,7 +208,7 @@ class ServicioAeropost implements InterfazProveedor
                 ->pluck('IDTRACKING');
 
             // Filtramos listadoPendientes directamente en la consulta
-            $trackings = Tracking::where(function($q) use ($trackingProveedorIds) {
+            $trackings = Tracking::where(function($q) use ($trackingProveedorIds) { //falta el with
                 $q->whereIn('id', $trackingProveedorIds)
                     ->whereNotIn('ESTADOSINCRONIZADO', ['Entregado', 'Facturado']);
             })
@@ -378,9 +378,15 @@ class ServicioAeropost implements InterfazProveedor
 
         // 4. Actualizar el aeroTrack
         if ($aerotrack) {
-            $trackingProveedor = $trackingBd->trackingProveedor;
-            $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
-            $trackingProveedor->save();
+            //si no tiene trackingProveedor, crear uno y prealerta tambien
+            if($trackingBd->trackingProveedor){
+                $trackingProveedor = $trackingBd->trackingProveedor;
+                $trackingProveedor->TRACKINGPROVEEDOR = $aerotrack;
+                $trackingProveedor->save();
+            }else{
+                $this->RegistrarTPyPrealerta($trackingBd, $trackingAeropost);
+            }
+
         }
 
     }
@@ -434,6 +440,11 @@ class ServicioAeropost implements InterfazProveedor
         }
     }
 
+    /**
+     * @param array $trackingsAeropost
+     * @return void
+     * @throws ExceptionAPObtenerPaquetes
+     */
     private function RegistrarTrackingsNoExistentes(array $trackingsAeropost): void
     {
         // - Los no existentes no se hace el llamado a parcelsApp, eso se espera a que le de  al detalle
@@ -547,6 +558,7 @@ class ServicioAeropost implements InterfazProveedor
      * @param Tracking $trackingBd
      * @param array $trackingAeropost
      * @return bool
+     * @throws ExceptionAPObtenerPaquetes
      */
     private function CambiosEncabezado(Tracking $trackingBd, array $trackingAeropost): bool{
         // - Si algun campo es distinto, pasar true, sino false
@@ -570,7 +582,7 @@ class ServicioAeropost implements InterfazProveedor
         if ($estado == $trackingBd->ESTADOSINCRONIZADO
             && round($weightKilos, 3) == $trackingBd->PESO //3 es la precision
         ) {
-            //revisar el aerotrack (se hace por separado por si el paquete que viene es una prealerta)
+            //revisar e}l aerotrack (se hace por separado por si el paquete que viene es una prealerta)
             if ($aerotrack &&
                 $trackingBd->trackingProveedor->TRACKINGPROVEEDOR == $aerotrack
             ) {
@@ -582,6 +594,34 @@ class ServicioAeropost implements InterfazProveedor
             return true;
 
 
+    }
+
+    /**
+     * @param Tracking $trackingBd
+     * @param array $trackingAeropost
+     * @return void
+     */
+    private function RegistrarTPyPrealerta(Tracking $trackingBd, array $trackingAeropost): void{
+        // - Se crea la funcion como una excepcion cuando se registra un tracking dentro de la app como SPR, y ya aparece en AP con un Aerotrack
+
+        $trackingProveedor = TrackingProveedor::create([
+            'IDTRACKING' => $trackingBd->id,
+            'IDPROVEEDOR' => 1, //Aeropost
+            'TRACKINGPROVEEDOR' => $trackingAeropost['graphicStationID'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Prealerta::create([
+            'DESCRIPCION' => $trackingAeropost['description'],
+            'VALOR' => $trackingAeropost['declaredValue'],
+            'IDCOURIER' => 0,
+            'NOMBRETIENDA' => 'TIENDA DE',
+            'IDTRACKINGPROVEEDOR' => $trackingProveedor->id,
+            'IDPREALERTA' => $trackingAeropost['noteId'] != 0 ? $trackingAeropost['noteId'] : null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

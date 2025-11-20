@@ -72,7 +72,10 @@ class TrackingController
                 'ultimoHistorial',
             ])->get(); //esto es eager loading: sin esto el resource hace problema del query N + 1 problem
 
+            $start = microtime(true);
             $trackingCollection = TrackingConsultadosTablePropioResource::toArrayCollection($trackings);
+            $end = microtime(true);
+            //Log::info("Tiempo creando coleccion trackings: " . ($end - $start));
 
             return response()->json(['trackings' => $trackingCollection]);
 
