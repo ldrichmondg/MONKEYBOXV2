@@ -481,15 +481,15 @@ class ServicioAeropost implements InterfazProveedor
 
             //si el courierTracking viene vacio, ponerle IDTRACKING el AEROTRACK
             if ($trackingAeropost['courierTracking'] == '') {
-                $idTracking = $trackingAeropost['aerotrack'];
+                $idTracking = strtoupper(trim($trackingAeropost['aerotrack']));
                 //Log::info('[RTNE] COURIER VACIO' . json_encode($trackingAeropost));
             } else
-                $idTracking = $trackingAeropost['courierTracking'];
+                $idTracking = strtoupper(trim($trackingAeropost['courierTracking']));
 
             // Armar array de Trackings
             $dataTracking[] = [
                 'IDAPI' => 0,
-                'IDTRACKING' => strtoupper($idTracking),
+                'IDTRACKING' => $idTracking,
                 'DESCRIPCION' => $trackingAeropost['description'],
                 'DESDE' => '',
                 'HASTA' => '',
@@ -517,9 +517,13 @@ class ServicioAeropost implements InterfazProveedor
         // 5. Armar TrackingProveedor y Prealerta con los IDs correctos
         $dataPre = [];
         foreach ($trackingsAeropost as $trackingAeropost) {
-            $trackingId = $ids[$trackingAeropost['courierTracking']]
-                ?? $ids[$trackingAeropost['aerotrack']]
-                ?? null;
+            $key = strtoupper(trim(
+                $trackingAeropost['courierTracking']
+                ?? $trackingAeropost['aerotrack']
+                ?? ''
+            )); //para mantener las mayusculas
+
+            $trackingId = $ids[$key] ?? null;
 
             $trackingProveedor = trim($trackingAeropost['aerotrack']) !== ''
                 ? $trackingAeropost['aerotrack']
@@ -527,7 +531,7 @@ class ServicioAeropost implements InterfazProveedor
 
             if (!$trackingId) {
                 Log::info('[SA, RTNE] No SE encontro el trackingid' . json_encode($trackingAeropost));
-                continue; // seguridad por si no se encuentra
+                throw new ExceptionAPObtenerPaquetes($trackingAeropost['courierTracking']);
             }
 
             // TrackingProveedor
