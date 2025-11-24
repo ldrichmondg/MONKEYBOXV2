@@ -1,4 +1,4 @@
-import { UserPlus, Trash2, Edit, CheckCircle, X, Eye, ArrowLeftRight, EyeOff  , type LucideIcon } from "lucide-react"
+import { UserPlus, Trash2, Edit, CheckCircle,RotateCcw , X, Eye, ArrowLeftRight, EyeOff  , type LucideIcon } from "lucide-react"
 
 export const iconMap: Record<string, LucideIcon> = {
     UserPlus,
@@ -8,6 +8,7 @@ export const iconMap: Record<string, LucideIcon> = {
     Eye,
     ArrowLeftRight,
     EyeOff,
+    RotateCcw,
 
     default: X,
 }

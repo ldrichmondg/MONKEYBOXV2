@@ -79,9 +79,8 @@ class ClienteController extends Controller
      */
     public function RegistroVista(): Response|RedirectResponse {
         try{
-            $provincias = ModelToIdDescripcionDTO::map(Provincia::all());
-            $tiposDirecciones = TipoDirecciones::list();
-            return Inertia::render('cliente/registroCliente', ['provincias' => $provincias, 'tiposDirecciones' => $tiposDirecciones]);
+
+            return Inertia::render('cliente/registroCliente', []);
         }catch (Exception $e){
             return back()->with('error', 'Hubo un error al mostrar la ventana de registro de clientes');
         }
@@ -118,7 +117,7 @@ class ClienteController extends Controller
         }
     }
 
-    public function  DetalleJson($id): JsonResponse
+    public function DetalleJson($id): JsonResponse
     {
         try{
             $cliente = Cliente::findOrFail($id);
@@ -141,6 +140,20 @@ class ClienteController extends Controller
         }catch (Exception $e){
 
             Log::info($e->getMessage());
+            return response()->error('Hubo un error al actualizar el cliente');
+        }
+    }
+
+    public function ConsultaJsonCombobox(): JsonResponse
+    {
+        try {
+            $clientes = ServicioCliente::ObtenerClientesSimples();
+
+            return response()->json(['clientes' => $clientes]);
+
+        } catch (\Exception $e) {
+
+            Log::error('[ClienteController->ConsultaJsonCombobox] error:' . $e);
             return response()->error('Hubo un error al actualizar el cliente');
         }
     }

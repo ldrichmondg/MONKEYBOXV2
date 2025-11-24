@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { MainContainer } from '@/ownComponents/containers/mainContainer';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 
 import { PageProps } from '@inertiajs/core';
 import { usePage } from '@inertiajs/react';
@@ -10,12 +10,14 @@ import { Combobox } from '@/ownComponents/combobox';
 
 import TagInput from '@/ownComponents/tagInput';
 import AlertError from '@/ownComponents/alertError';
-import { Import, MoreHorizontal, MoveRight, RefreshCcw } from 'lucide-react';
+import { Import, MoreHorizontal, MoveRight, RefreshCcw, UserRoundPlus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/ownComponents/spinner';
 import { TagifyTag } from '@/types';
 import React, { useEffect, useState } from 'react';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 //api calls
 import { obtenerConfiguracion } from '@/api/configuracion/configuracion';
@@ -24,7 +26,13 @@ import { comboboxProveedor } from '@/api/proveedor/proveedor';
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { iconMap } from '@/lib/iconMap';
@@ -40,166 +48,24 @@ import { Configuracion } from '@/types/configuracion';
 import { EstatusTable, WithActions } from '@/types/table';
 import { TrackingConPrealertaBaseProveedor, TrackingConsultadosTable } from '@/types/tracking';
 import { InputError } from '@/types/input';
+import RegistroCliente from '@/pages/cliente/registroCliente';
+import ClienteForm from '@/pages/cliente/registro/clienteForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ClienteCompleto, DireccionesTable } from '@/types/cliente';
+import { ObtenerClientesCombobox, RegistrarCliente } from '@/api/clientes/cliente';
+import { ExitoModal } from '@/ownComponents/modals/exitoModal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Consulta Trackings',
-        href: route('tracking.consulta.vista'),
+        href: route('tracking.consulta.vista')
     },
     {
         title: 'Registrar Masivo',
-        href: route('tracking.registroMasivo.vista'),
-    },
+        href: route('tracking.registroMasivo.vista')
+    }
 ];
 
-export const columns: ColumnDef<TrackingConsultadosTable>[] = [
-    {
-        accessorKey: 'idTracking',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Tracking ID
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('idTracking')}</div>,
-    },
-    {
-        accessorKey: 'nombreCliente',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Cliente
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('nombreCliente')}</div>,
-    },
-    {
-        accessorKey: 'descripcion',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Descripción
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('descripcion')}</div>,
-    },
-    {
-        accessorKey: 'valor',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Valor
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('valor')}</div>,
-    },
-    {
-        accessorKey: 'desde',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Desde
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('desde')}</div>,
-    },
-    {
-        accessorKey: 'hasta',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Hasta
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('hasta')}</div>,
-    },
-    {
-        accessorKey: 'couriers',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Courier/s
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('couriers')}</div>,
-    },
-    {
-        accessorKey: 'nombreProveedor',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Proveedor
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="capitalize">{row.getValue('nombreProveedor')}</div>,
-    },
-    {
-        accessorKey: 'estatus',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" className="text-gray-500" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Estatus
-                </Button>
-            );
-        },
-        cell: ({ row }) => (
-            <Badge className={'text-white lowercase ' + row.original.estatus.colorClass} variant="secondary">
-                {row.original.estatus.descripcion}
-            </Badge>
-        ),
-    },
-    {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-            const object = row.original;
-            const actions = (row.original as WithActions).actions ?? [];
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        {actions.map((action) => {
-                            const LucideIcon: LucideIcon = iconMap[action.icon ?? 'UserPlus'];
-                            const needsModal = action.actionMessage != undefined && action.actionModalTitle != undefined;
-                            return (
-                                <DropdownMenuItem
-                                    key={object.id}
-                                    onClick={async () => {
-                                        if (needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined)
-                                            EliminarModal({
-                                                description: action.actionMessage,
-                                                titulo: action.actionModalTitle,
-                                                route: action.route,
-                                            });
-                                    }}
-                                >
-                                    <Link href={!needsModal ? action.route : ''} className="flex flex-nowrap items-center gap-2">
-                                        <LucideIcon /> <span>{action.descripcion} </span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            );
-                        })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
-        },
-    },
-];
 
 type CardData = {
     idCliente: number;
@@ -216,25 +82,27 @@ interface Props extends PageProps {
 }
 
 function CardClienteTracking({
-    clientes = [],
-    onChange,
-    cardCliente,
-    isActive,
-}: {
+                                 clientes = [],
+                                 onChange,
+                                 cardCliente,
+                                 isActive,
+                                 setAbrirModalClienteRegistro
+                             }: {
     clientes: ComboBoxItem[];
     onChange: (newData: CardData) => void;
     cardCliente: CardData;
     isActive: boolean;
-}): React.ReactElement
-{
+    setAbrirModalClienteRegistro: React.Dispatch<React.SetStateAction<boolean>>;
+}): React.ReactElement {
     const [tags, setTags] = useState<TagifyTag[]>([]);
+    const [idCliente, setIdCliente] = React.useState<ComboBoxItem[]>();
     const handleCambioCliente = (idSeleccionado: number) => {
         const cliente = clientes.find((c) => c.id === idSeleccionado);
         if (cliente) {
             onChange({
                 trackings: cardCliente.trackings,
                 idCliente: idSeleccionado,
-                nombreCliente: cliente.descripcion,
+                nombreCliente: cliente.descripcion
             });
         }
     };
@@ -242,7 +110,9 @@ function CardClienteTracking({
     function handleCambioTrackings(): void {
         const tagsString: string[] = [];
         tags.forEach((tag) => {
-            tagsString.push(tag.value);
+            const elementosTag = tag.value.split('\\r\\n');
+            tagsString.push(...elementosTag);
+
         });
 
         if (!arraysSonIguales(tagsString, cardCliente.trackings)) {
@@ -250,7 +120,7 @@ function CardClienteTracking({
             onChange({
                 trackings: tagsString,
                 idCliente: cardCliente.idCliente,
-                nombreCliente: cardCliente.nombreCliente,
+                nombreCliente: cardCliente.nombreCliente
             });
         }
     }
@@ -259,13 +129,20 @@ function CardClienteTracking({
 
     return (
         <Card className="my-3 flex items-center justify-between p-4">
-            <Combobox
-                items={clientes}
-                placeholder="Seleccione el cliente..."
-                classNames="w-60 p-6"
-                onChange={handleCambioCliente}
-                isActive={isActive}
-            ></Combobox>
+            <div className={'flex items-center gap-2'}>
+                <Combobox
+                    items={clientes}
+                    placeholder="Seleccione el cliente..."
+                    classNames="w-60 p-6"
+                    onChange={handleCambioCliente}
+                    isActive={isActive}
+                    //idSelect={}
+                ></Combobox>
+
+                <Button className={'w-10 p-6'}
+                        onClick={() => setAbrirModalClienteRegistro((prev) => !prev)}><UserRoundPlus
+                    className={'stroke-white size-5'} /></Button>
+            </div>
 
             <MoveRight className="size-12 text-gray-500" />
             <TagInput
@@ -276,8 +153,11 @@ function CardClienteTracking({
                 settings={{
                     placeholder: 'Escribe y presiona enter',
                     dropdown: {
-                        enabled: 1, // activar dropdown de sugerencias
+                        enabled: 1 // activar dropdown de sugerencias
                     },
+                    delimiters: '\n',          // 👈 Divide por líneas
+                    pasteAsTags: true,         // 👈 Si pega texto con varias líneas → varios tags
+                    editTags: 0               // Evita que re-edite tags multilinea
                 }}
                 isActive={isActive}
             />
@@ -296,6 +176,27 @@ export default function RegistroMasivo() {
     const [preealertando, setPreealertando] = useState(false);
     const [puedePreealertar, setPuedePreealertar] = useState(false);
     const [trackings, setTrackings] = useState<TrackingConsultadosTable[]>([]);
+    const [abrirModalClienteRegistro, setAbrirModalClienteRegistro] = useState<boolean>(false);
+
+    const [clientesFront, setClientesFront] = useState<ComboBoxItem[]>(clientes);
+
+    // variables para el componente clienteForm
+    const [clienteFront, setClienteFront] = React.useState<ClienteCompleto>({
+        id: -1,
+        nombre: '',
+        apellidos: '',
+        empresa: '',
+        telefono: null,
+        correo: '',
+        cedula: null,
+        casillero: '',
+        direccionPrincipal: '',
+        direcciones: [],
+        fechaNacimiento: null,
+        errores: []
+    });
+    const [direcciones, setDirecciones] = React.useState<DireccionesTable[]>([]);
+
 
     //importar los datos de proveedor. Se hace asi porque await no lo permite dentro de esta fn
     useEffect(() => {
@@ -315,7 +216,7 @@ export default function RegistroMasivo() {
             idCliente: number;
             nombreCliente: string;
             trackings: string[];
-        },
+        }
     ) => {
         setCards((prev) => prev.map((card, i) => (i === index ? newData : card)));
         const nuevosCards = cards.map((card, i) => (i === index ? newData : card));
@@ -329,11 +230,186 @@ export default function RegistroMasivo() {
         VerificarPuedePreealertar(setPuedePreealertar, trackings);
     }, [trackings]);
 
-    //Todo lo relacionado a la tabla
+    //T#do lo relacionado a la tabla
+    const columns: ColumnDef<TrackingConsultadosTable>[] = [
+        {
+            accessorKey: 'idTracking',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Tracking ID
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('idTracking')}</div>
+        },
+        {
+            accessorKey: 'nombreCliente',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Cliente
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('nombreCliente')}</div>
+        },
+        {
+            accessorKey: 'descripcion',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Descripción
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('descripcion')}</div>
+        },
+        {
+            accessorKey: 'valor',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Valor
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('valor')}</div>
+        },
+        {
+            accessorKey: 'desde',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Desde
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('desde')}</div>
+        },
+        {
+            accessorKey: 'hasta',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Hasta
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('hasta')}</div>
+        },
+        {
+            accessorKey: 'couriers',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Courier/s
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('couriers')}</div>
+        },
+        {
+            accessorKey: 'nombreProveedor',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Proveedor
+                    </Button>
+                );
+            },
+            cell: ({ row }) => <div className="capitalize">{row.getValue('nombreProveedor')}</div>
+        },
+        {
+            accessorKey: 'estatus',
+            header: ({ column }) => {
+                return (
+                    <Button variant="ghost" className="text-gray-500"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                        Estatus
+                    </Button>
+                );
+            },
+            cell: ({ row }) => (
+                <Badge className={'text-white lowercase ' + row.original.estatus.colorClass} variant="secondary">
+                    {row.original.estatus.descripcion}
+                </Badge>
+            )
+        },
+        {
+            id: 'actions',
+            enableHiding: false,
+            cell: ({ row }) => {
+                const object = row.original;
+                const actions = (row.original as WithActions).actions ?? [];
+
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            {actions.map((action) => {
+                                const LucideIcon: LucideIcon = iconMap[action.icon ?? 'UserPlus'];
+                                const needsModal = action.actionMessage != undefined && action.actionModalTitle != undefined;
+                                return (
+                                    <DropdownMenuItem
+                                        key={object.id}
+                                        onClick={async () => {
+                                            if (needsModal && action.actionMessage != undefined && action.actionModalTitle != undefined)
+                                                EliminarModal({
+                                                    description: action.actionMessage,
+                                                    titulo: action.actionModalTitle,
+                                                    route: action.route
+                                                });
+
+                                            else if(action.descripcion == 'Reintentar'){
+                                                await RegistrarTrackingIndividual(row.original,setTrackings)
+                                            }
+                                        }}
+                                    >
+                                        <Link
+                                            href={
+                                                (!needsModal && action.descripcion !== "Reintentar")
+                                                    ? action.route
+                                                    : "#"
+                                            }
+                                            onClick={(e) => {
+                                                if (needsModal || action.descripcion === "Reintentar") {
+                                                    e.preventDefault(); // Evita navegación
+                                                }
+                                            }}
+                                            className="flex flex-nowrap items-center gap-2"
+                                        >
+                                            <LucideIcon />
+                                            <span>{action.descripcion}</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                );
+                            })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                );
+            }
+        }
+    ];
+
     const table = useReactTable({
         data: trackings,
         columns,
-        getCoreRowModel: getCoreRowModel(),
+        getCoreRowModel: getCoreRowModel()
     });
 
     function ActualizarTracking(e: React.ChangeEvent<HTMLInputElement>, idTracking: string, campo: string) {
@@ -347,12 +423,12 @@ export default function RegistroMasivo() {
             prev.map((tracking) =>
                 tracking.idTracking === idTracking
                     ? {
-                          ...tracking,
-                          descripcion: campo == 'descripcion' ? descripcion : tracking.descripcion,
-                          valor: campo == 'valor' ? valor : tracking.valor,
-                      }
-                    : tracking,
-            ),
+                        ...tracking,
+                        descripcion: campo == 'descripcion' ? descripcion : tracking.descripcion,
+                        valor: campo == 'valor' ? valor : tracking.valor
+                    }
+                    : tracking
+            )
         );
     }
 
@@ -366,7 +442,7 @@ export default function RegistroMasivo() {
                 setShowSpinner,
                 setTrackings,
                 setLoading,
-                cards,
+                cards
             ); //se crea porque pasar trackings de golpe react tiene la lista vacia
 
             await RegistrarTrackings(trackingsNuevos, setTrackings);
@@ -381,15 +457,15 @@ export default function RegistroMasivo() {
             name: 'Nuevo Cliente',
             className: 'bg-red-400 text-white hover:bg-red-500 ',
             isActive: !loading,
-            onClick: agregarCard,
+            onClick: agregarCard
         },
         {
             id: 'buscarTrackings',
             name: 'Buscar Trackings',
             className: 'bg-orange-400 text-white hover:bg-orange-300 ',
             isActive: btnBuscarActive,
-            onClick: EnviarFormulario,
-        },
+            onClick: EnviarFormulario
+        }
     ];
 
     return (
@@ -398,17 +474,55 @@ export default function RegistroMasivo() {
             <MainContainer>
 
                 {/* Si hay algun error de una vista a donde tenia que ir y la devuelve a esta */}
-                <AlertError flash={flash}/>
+                <AlertError flash={flash} />
 
                 {cards.map((cardData, index) => (
                     <CardClienteTracking
                         key={index}
                         cardCliente={cardData}
                         onChange={(newData) => actualizarCard(index, newData)} //(newData) es lo que pasa el componente hijo para despues llamar a la fn actualizarCard
-                        clientes={clientes}
+                        clientes={clientesFront}
                         isActive={!loading}
+                        setAbrirModalClienteRegistro={setAbrirModalClienteRegistro}
                     />
                 ))}
+
+                {/* Dialog para poder crear un cliente */}
+                <Dialog
+                    open={abrirModalClienteRegistro}
+                    onOpenChange={() => {
+                        setAbrirModalClienteRegistro((prev) => !prev);
+                    }}
+                >
+                    <DialogContent className="w-auto max-w-[95vw] max-h-[90vh] overflow-y-scroll">
+                        <DialogHeader>
+                            <DialogTitle>Registrar Cliente</DialogTitle>
+
+                            <DialogDescription>
+                                Inserta los datos necesarios para el registro de un cliente.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {/* Aquí va el formulario, separado del header */}
+                        <div className="flex flex-col mt-2">
+                            <ClienteForm
+                                clienteFront={clienteFront}
+                                setClienteFront={setClienteFront}
+                                direcciones={direcciones}
+                                setDirecciones={setDirecciones}
+                            />
+
+                            <Button
+                                className={'bg-red-400 text-white w-full'}
+                                onClick={() => RegistrarClienteAux(clienteFront, setClienteFront, setShowSpinner, direcciones, setClientesFront, setDirecciones, setAbrirModalClienteRegistro)}
+                            >
+                                Registrar Cliente
+                            </Button>
+                        </div>
+                    </DialogContent>
+
+                </Dialog>
+
 
                 <Spinner isActive={showSpinner}></Spinner>
                 {/* Esto ocurre cuando se buscan los trackings */}
@@ -476,7 +590,7 @@ export default function RegistroMasivo() {
                                                                     }
                                                                     disabled={preealertando || row.original.estatus.descripcion != 'Sin Prealertar'}
                                                                     error={row.original.errores.find(
-                                                                        (error) => error.name == cell.column.id + '-' + row.original.idTracking,
+                                                                        (error) => error.name == cell.column.id + '-' + row.original.idTracking
                                                                     )}
                                                                 />
                                                             ) : cell.column.id == 'nombreProveedor' ? (
@@ -489,7 +603,7 @@ export default function RegistroMasivo() {
                                                                     }
                                                                     isActive={row.original.trackingCompleto == true && !preealertando && row.original.estatus.descripcion == 'Sin Prealertar'}
                                                                     error={row.original.errores.find(
-                                                                        (error) => error.name == 'idProveedor-' + row.original.idTracking,
+                                                                        (error) => error.name == 'idProveedor-' + row.original.idTracking
                                                                     )}
                                                                     idSelect={row.original.idProveedor}
                                                                 ></Combobox>
@@ -512,13 +626,16 @@ export default function RegistroMasivo() {
                             </div>
                             <div className="flex items-center justify-end space-x-2 px-4 py-4">
                                 <div className="flex-1 text-sm text-muted-foreground">
-                                    {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+                                    {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
+                                    selected.
                                 </div>
                                 <div className="space-x-2">
-                                    <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                                    <Button variant="outline" size="sm" onClick={() => table.previousPage()}
+                                            disabled={!table.getCanPreviousPage()}>
                                         Anterior
                                     </Button>
-                                    <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                                    <Button variant="outline" size="sm" onClick={() => table.nextPage()}
+                                            disabled={!table.getCanNextPage()}>
                                         Siguiente
                                     </Button>
                                 </div>
@@ -526,6 +643,8 @@ export default function RegistroMasivo() {
                         </div>
                     </Card>
                 )}
+
+                <Toaster position="top-center" />
             </MainContainer>
         </AppLayout>
     );
@@ -561,9 +680,8 @@ async function InsertarDatosTabla(
     setShowSpinner: React.Dispatch<React.SetStateAction<boolean>>,
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    cards: CardData[],
-): Promise<TrackingConsultadosTable[]>
-{
+    cards: CardData[]
+): Promise<TrackingConsultadosTable[]> {
     //0. Mostrar el spinner
     //1. Hacer el request del archivo de configuracion para obtener el valor
     //2. Pasar la información de los cards a objetos tracking
@@ -590,8 +708,8 @@ async function InsertarDatosTabla(
             estadoSinRegistrar = [
                 {
                     descripcion: 'Sin Prealertar',
-                    colorClass: 'bg-transparent border-pink-300 text-pink-300',
-                },
+                    colorClass: 'bg-transparent border-pink-300 text-pink-300'
+                }
             ];
             return [];
         }
@@ -616,16 +734,16 @@ async function InsertarDatosTabla(
                     destino: null,
                     errores: [
                         {
-                            name: 'descripcion-' + idTracking,
+                            name: 'descripcion-' + idTracking
                         },
                         {
-                            name: 'valor-' + idTracking,
+                            name: 'valor-' + idTracking
                         },
                         {
-                            name: 'idProveedor-' + idTracking,
-                        },
+                            name: 'idProveedor-' + idTracking
+                        }
                     ],
-                    actions: [],
+                    actions: []
                 };
                 setTrackings((prev) => prev.concat(tracking));
                 trackings.push(tracking);
@@ -645,7 +763,7 @@ async function InsertarDatosTabla(
 
 async function RegistrarTrackings(
     trackings: TrackingConsultadosTable[],
-    setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
+    setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>
 ) {
     //1. Recorrer cada tracking para registrarlo
     //2. Cuando entra a un tracking, cambiar el estado a registrando... y ponerlo en negro
@@ -655,105 +773,121 @@ async function RegistrarTrackings(
     //5. Poner/Mostrar el boton de preAlertar
     try {
         for (const t of trackings) {
-            //2. Cuando entra a un tracking, cambiar el estado a registrando... y ponerlo en negro
+            await RegistrarTrackingIndividual(t, setTrackings);
+        }
+    } catch (error) {
+        console.error('[registroMasivo,RegistrarTrackings] error: ', error);
+    }
+}
+
+async function RegistrarTrackingIndividual(
+    t: TrackingConsultadosTable,
+    setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>
+) {
+    //2. Cuando entra a un tracking, cambiar el estado a registrando... y ponerlo en negro
+    setTrackings((prev) =>
+        prev.map((item) =>
+            item.idTracking === t.idTracking
+                ? {
+                    ...item,
+                    estatus: {
+                        descripcion: 'Registrando...',
+                        colorClass: 'bg-transparent border-brown-400 text-brown-400'
+                    }
+                }
+                : item
+        )
+    );
+
+    //3. Hacer el request para registrar el tracking
+    try {
+        const response = await fetch(route('usuario.tracking.registro.guardar'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json', //esto es para que no hara redirecciones automaticas y me indique el response
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                idTracking: t.idTracking,
+                idCliente: t.idCliente
+            })
+        });
+
+        if (!response.ok) {
+            ErrorModal('Error al registrar los trackings', 'Hubo un error al registrar los trackings');
+            throw new Error('Error al registrar los trackings.');
+        }
+
+        //4. Cuando se obtiene la respuesta se recibe un objeto de tipo TrackingConsultadosTable con el estado en PreAlertado o No se encontro
+        // - El response trae la propiedad 'trackingCompleto'
+        const responseTracking: TrackingConsultadosTable = await response.json();
+
+        // -Si no se encontro
+        if (!responseTracking.trackingCompleto) {
             setTrackings((prev) =>
                 prev.map((item) =>
                     item.idTracking === t.idTracking
                         ? {
-                              ...item,
-                              estatus: {
-                                  descripcion: 'Registrando...',
-                                  colorClass: 'bg-transparent border-brown-400 text-brown-400',
-                              },
-                          }
-                        : item,
-                ),
+                            ...item,
+                            estatus: {
+                                descripcion: 'No se encontró',
+                                colorClass: 'bg-transparent border-red-400 text-red-400'
+                            },
+                            actions:[
+                                {
+                                    descripcion: 'Reintentar',
+                                    icon: 'RotateCcw',
+                                    route: '',
+                                    actionType: '',
+                                    isActive: true,
+                                }
+                            ]
+                        }
+                        : item
+                )
             );
-
-            //3. Hacer el request para registrar el tracking
-            try {
-                const response = await fetch(route('usuario.tracking.registro.guardar'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json', //esto es para que no hara redirecciones automaticas y me indique el response
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    },
-                    body: JSON.stringify({
-                        idTracking: t.idTracking,
-                        idCliente: t.idCliente,
-                    }),
-                });
-
-                if (!response.ok) {
-                    ErrorModal('Error al registrar los trackings', 'Hubo un error al registrar los trackings');
-                    throw new Error('Error al registrar los trackings.');
-                }
-
-                //4. Cuando se obtiene la respuesta se recibe un objeto de tipo TrackingConsultadosTable con el estado en PreAlertado o No se encontro
-                // - El response trae la propiedad 'trackingCompleto'
-                const responseTracking: TrackingConsultadosTable = await response.json();
-
-                // -Si no se encontro
-                if (!responseTracking.trackingCompleto) {
-                    setTrackings((prev) =>
-                        prev.map((item) =>
-                            item.idTracking === t.idTracking
-                                ? {
-                                      ...item,
-                                      estatus: {
-                                          descripcion: 'No se encontró',
-                                          colorClass: 'bg-transparent border-red-400 text-red-400',
-                                      },
-                                  }
-                                : item,
-                        ),
-                    );
-                } else {
-                    setTrackings((prev) =>
-                        prev.map((item) =>
-                            item.idTracking === t.idTracking
-                                ? {
-                                      ...item,
-                                      id: responseTracking.id,
-                                      descripcion:responseTracking.descripcion,
-                                      idProveedor: responseTracking.idProveedor,
-                                      desde: responseTracking.desde,
-                                      hasta: responseTracking.hasta,
-                                      destino: responseTracking.destino,
-                                      couriers: responseTracking.couriers,
-                                      idCliente: responseTracking.idCliente,
-                                      nombreCliente: responseTracking.nombreCliente,
-                                      estatus: {
-                                          descripcion: responseTracking.estatus.descripcion,
-                                          colorClass: responseTracking.estatus.colorClass,
-                                      },
-                                      actions: responseTracking.actions,
-                                      trackingCompleto: responseTracking.trackingCompleto,
-                                  }
-                                : item,
-                        ),
-                    );
-                }
-            } catch (error) {
-                console.error('Error de red:', error);
-                setTrackings((prev) =>
-                    prev.map((item) =>
-                        item.id === t.id
-                            ? {
-                                  ...item,
-                                  estatus: {
-                                      descripcion: 'Error ❌',
-                                      colorClass: 'bg-yellow-100 text-yellow-800',
-                                  },
-                              }
-                            : item,
-                    ),
-                );
-            }
+        } else {
+            setTrackings((prev) =>
+                prev.map((item) =>
+                    item.idTracking === t.idTracking
+                        ? {
+                            ...item,
+                            id: responseTracking.id,
+                            descripcion: responseTracking.descripcion,
+                            idProveedor: responseTracking.idProveedor,
+                            desde: responseTracking.desde,
+                            hasta: responseTracking.hasta,
+                            destino: responseTracking.destino,
+                            couriers: responseTracking.couriers,
+                            idCliente: responseTracking.idCliente,
+                            nombreCliente: responseTracking.nombreCliente,
+                            estatus: {
+                                descripcion: responseTracking.estatus.descripcion,
+                                colorClass: responseTracking.estatus.colorClass
+                            },
+                            actions: responseTracking.actions,
+                            trackingCompleto: responseTracking.trackingCompleto
+                        }
+                        : item
+                )
+            );
         }
     } catch (error) {
-        console.error('[registroMasivo,RegistrarTrackings] error: ', error);
+        console.error('Error de red:', error);
+        setTrackings((prev) =>
+            prev.map((item) =>
+                item.id === t.id
+                    ? {
+                        ...item,
+                        estatus: {
+                            descripcion: 'Error ❌',
+                            colorClass: 'bg-yellow-100 text-yellow-800'
+                        }
+                    }
+                    : item
+            )
+        );
     }
 }
 
@@ -765,7 +899,7 @@ function AgregarProveedor(
     idProveedor: number,
     proveedores: ComboBoxItem[],
     trackingSeleccionado: TrackingConsultadosTable,
-    setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
+    setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>
 ) {
     // 1. Se ingresa el idProveedor y nombreProveedor al tracking
     // 2. Se verifica si todos los proveedores que estan completos tienen proveedor
@@ -776,12 +910,12 @@ function AgregarProveedor(
             prev.map((tracking) =>
                 trackingSeleccionado.idTracking == tracking.idTracking
                     ? {
-                          ...tracking,
-                          idProveedor: idProveedor,
-                          nombreProveedor: proveedores.map((prov) => prov.id == idProveedor).descripcion,
-                      }
-                    : tracking,
-            ),
+                        ...tracking,
+                        idProveedor: idProveedor,
+                        nombreProveedor: proveedores.map((prov) => prov.id == idProveedor).descripcion
+                    }
+                    : tracking
+            )
         );
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -809,10 +943,10 @@ function VerificarPuedePreealertar(setPuedePreealertar: React.Dispatch<React.Set
     try {
         const cantidadTrackingsCompletos = trackings.filter((tracking) => tracking.trackingCompleto == true).length;
         const cantidadTrackingsParaPreealertar = trackings.filter(
-            (tracking) => tracking.idProveedor != null && tracking.valor !== -1 && tracking.descripcion !== '' && tracking.estatus.descripcion == 'Sin Prealertar',
+            (tracking) => tracking.idProveedor != null && tracking.valor !== -1 && tracking.descripcion !== '' && tracking.estatus.descripcion == 'Sin Prealertar'
         ).length;
 
-        console.log('Tracking completos: '+ cantidadTrackingsCompletos + ' para prealertar: ' + cantidadTrackingsParaPreealertar)
+        console.log('Tracking completos: ' + cantidadTrackingsCompletos + ' para prealertar: ' + cantidadTrackingsParaPreealertar);
         const puedePreealertar: boolean = cantidadTrackingsCompletos == cantidadTrackingsParaPreealertar && cantidadTrackingsParaPreealertar != 0;
 
         setPuedePreealertar(puedePreealertar);
@@ -830,7 +964,7 @@ function VerificarPuedePreealertar(setPuedePreealertar: React.Dispatch<React.Set
 async function PreealertarTracking(
     trackings: TrackingConsultadosTable[],
     setTrackings: React.Dispatch<React.SetStateAction<TrackingConsultadosTable[]>>,
-    setPreealertando: React.Dispatch<React.SetStateAction<boolean>>,
+    setPreealertando: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // 1. Se va a poner la variable en preealertando, para indicar que se esta prealertando
     // 2. Se va a recorrer cada tracking
@@ -851,14 +985,14 @@ async function PreealertarTracking(
                 prev.map((tracking) =>
                     trackingFor.idTracking == tracking.idTracking && tracking.trackingCompleto
                         ? {
-                              ...tracking,
-                              estatus: {
-                                  descripcion: 'preealertando...',
-                                  colorClass: 'bg-transparent border-gray-400 text-gray-400',
-                              },
-                          }
-                        : tracking,
-                ),
+                            ...tracking,
+                            estatus: {
+                                descripcion: 'preealertando...',
+                                colorClass: 'bg-transparent border-gray-400 text-gray-400'
+                            }
+                        }
+                        : tracking
+                )
             );
 
             // 2.2  Se envia un request de ese tracking para hacerle la prealerta
@@ -875,10 +1009,10 @@ async function PreealertarTracking(
                     id: -1 /* aun no se sabe porque no se ha prealertado aun */,
                     valor: trackingFor.valor,
                     descripcion: trackingFor.descripcion,
-                    idTrackingProveedor: -1 /* aun no se sabe porque no se ha prealertado aun */,
+                    idTrackingProveedor: -1 /* aun no se sabe porque no se ha prealertado aun */
                 },
                 errores: trackingFor.errores,
-                estatus: trackingFor.estatus,
+                estatus: trackingFor.estatus
             };
 
             /* Un try por si ocurre un problema al recibir el tracking prealertado */
@@ -899,13 +1033,13 @@ async function PreealertarTracking(
                             const erroresActualizados: InputError[] = tracking.errores.map((errorActual) => {
                                 // Buscamos en trackingRespuesta un error cuyo name sea prefijo del errorActual.name
                                 const errorRespuesta: InputError | undefined = trackingRespuesta.errores.find((errResp) =>
-                                    errorActual.name.startsWith(errResp.name),
+                                    errorActual.name.startsWith(errResp.name)
                                 );
 
                                 if (errorRespuesta) {
                                     return {
                                         ...errorActual,
-                                        message: errorRespuesta.message, // Actualizamos el mensaje con el del response
+                                        message: errorRespuesta.message // Actualizamos el mensaje con el del response
                                     };
                                 }
 
@@ -918,12 +1052,12 @@ async function PreealertarTracking(
                                 errores: erroresActualizados,
                                 estatus: {
                                     descripcion: trackingRespuesta.estatus.descripcion,
-                                    colorClass: trackingRespuesta.estatus.colorClass,
-                                },
+                                    colorClass: trackingRespuesta.estatus.colorClass
+                                }
                             };
                         }
                         return tracking;
-                    }),
+                    })
                 );
 
                 // - Verificar si hubo un error de validacion de idTracking
@@ -931,7 +1065,7 @@ async function PreealertarTracking(
                 if (errorIdTracking) {
                     ErrorModal(
                         'Error al subir la prealerta',
-                        'Lo sentimos hubo un error al subir la prealerta. Indica el siguiente mensaje al departamento de TI: No se enlazó idTracking',
+                        'Lo sentimos hubo un error al subir la prealerta. Indica el siguiente mensaje al departamento de TI: No se enlazó idTracking'
                     );
                 }
 
@@ -945,5 +1079,100 @@ async function PreealertarTracking(
     } catch (e) {
         console.log('[RegistroMasivo, PT] error:' + e);
         ErrorModal('Error al preealertar trackings', 'Hubo un error al intentar preealertar los trackings. Por favor contactar con soporte TI');
+    }
+}
+
+
+// ################################
+// Registrar cliente
+// ################################
+async function RegistrarClienteAux(
+    cliente: ClienteCompleto,
+    setCliente: React.Dispatch<React.SetStateAction<ClienteCompleto>>,
+    setRegistrando: React.Dispatch<React.SetStateAction<boolean>>,
+    direcciones: DireccionesTable[],
+    setClientesFront: React.Dispatch<React.SetStateAction<ComboBoxItem[]>>,
+    setDirecciones: React.Dispatch<React.SetStateAction<DireccionesTable[]>>,
+    setAbrirModalRegistrarCliente: React.Dispatch<React.SetStateAction<boolean>>,
+) {
+    // 1. Mostrar el registrando para que se muestre el spinner
+    // 2. Agregar las direcciones al cliente
+    // 3. Guardar el cliente
+    // 4. Enviar mensaje de que el cliente se registro exitosamente
+    // 5. Quitar el spinner
+    // 6. Actualizar los clientes
+    // 7. Limpiar el cliente y direcciones
+    // 8. Cerrar el modal de registrar cliente
+
+
+    // 1. Mostrar el registrando para que se muestre el spinner
+    setRegistrando(true);
+
+    // 2. Agregar las direcciones al cliente
+    const clienteActualizado = {
+        ...cliente,
+        direcciones: direcciones
+    };
+
+    // 3. Guardar el cliente
+    const idToastRegistrarCliente = toast.loading('Nuevo evento ejecutado', {
+        description: 'Registrando Cliente...'
+    });
+
+    try {
+        const clienteRespuesta = await RegistrarCliente(clienteActualizado);
+        console.log(clienteRespuesta);
+
+        setCliente(clienteRespuesta);
+        if (clienteRespuesta.errores.length == 0) {
+            toast.success('Registro exitoso!', {
+                id: idToastRegistrarCliente,
+                description: 'Se registró el cliente exitosamente.'
+            });
+            //ExitoModal('Registro exitoso', 'Se registró el cliente exitosamente.');
+
+            // 6. Actualizar la lista de clientes con el nuevo
+            setClientesFront(await ObtenerClientesCombobox());
+
+            // 7. Limpiar el cliente y direcciones
+            setCliente({
+                id: -1,
+                nombre: '',
+                apellidos: '',
+                empresa: '',
+                telefono: null,
+                correo: '',
+                cedula: null,
+                casillero: '',
+                direccionPrincipal: '',
+                direcciones: [],
+                fechaNacimiento: null,
+                errores: []
+            });
+
+            setDirecciones([]);
+
+            // 8. Cerrar el modal de registrar cliente
+            setAbrirModalRegistrarCliente(false);
+        } else {
+            const erroresDirecciones = clienteRespuesta.errores
+                .filter((error) => error.name.includes('direcciones'))
+                .map((error) => error.message)
+                .join(' ');
+
+            toast.error('Error al registrar cliente', { id: idToastRegistrarCliente, description: erroresDirecciones });
+            //ErrorModal('Error al registrar cliente', erroresDirecciones);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (e) {
+        toast.error('Error al registrar cliente', {
+            id: idToastRegistrarCliente,
+            description: 'Hubo un error al registrar el cliente.Vuelve a intentarlo o contacta a soporte TI .'
+        });
+        //ErrorModal('Error al registrar cliente', 'Hubo un error al registrar el cliente. Vuelve a intentarlo o contacta a soporte TI.');
+    } finally {
+        // 5. Quitar el spinner
+        setRegistrando(false);
     }
 }

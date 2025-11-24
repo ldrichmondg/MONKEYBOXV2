@@ -72,7 +72,7 @@ class ServicioCliente
             ]);
         }
 
-        EventoRegistroCliente::dispatch($cliente, $contraseña);
+        //EventoRegistroCliente::dispatch($cliente, $contraseña);
         event(new Registered($usuario));
 
         return $cliente;

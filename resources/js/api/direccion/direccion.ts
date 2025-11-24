@@ -32,6 +32,43 @@ export async function obtenerDirecciones(idCliente: number): Promise<Direccion[]
     return direcciones;
 }
 
+export async function obtenerTiposDirecciones(): Promise<ComboBoxItem[]>{
+    // en el caso de que haya un error se tira AppError y el error que tira se le pone en el campo cantones
+    const response = await fetch(route('usuario.tiposdirecciones.consulta.json', ), {
+        method: 'GET'
+    });
+
+
+    if (!response.ok) {
+        const errorResponse: ResponseError = await response.json();
+        errorResponse.httpStatus = response.status;
+
+        await administracionErrores(errorResponse, "Error al obtener los cantones", false);
+        throw new AppError(errorResponse.errorApp ,response.status, "Error al obtener los cantones", errorResponse.titleMessage);
+    }
+    const data = await response.json();
+    return data.tiposDirecciones;
+}
+
+
+export async function obtenerProvincias(): Promise<ComboBoxItem[]>{
+    // en el caso de que haya un error se tira AppError y el error que tira se le pone en el campo cantones
+    const response = await fetch(route('usuario.provincias.consulta.json', ), {
+        method: 'GET'
+    });
+
+
+    if (!response.ok) {
+        const errorResponse: ResponseError = await response.json();
+        errorResponse.httpStatus = response.status;
+
+        await administracionErrores(errorResponse, "Error al obtener los cantones", false);
+        throw new AppError(errorResponse.errorApp ,response.status, "Error al obtener los cantones", errorResponse.titleMessage);
+    }
+    const data = await response.json();
+    return data.provincias;
+}
+
 export async function obtenerCantones(idProvincia: number): Promise<ComboBoxItem[]>{
     // en el caso de que haya un error se tira AppError y el error que tira se le pone en el campo cantones
     const response = await fetch(route('usuario.cantones.consulta.json', { id: idProvincia }), {

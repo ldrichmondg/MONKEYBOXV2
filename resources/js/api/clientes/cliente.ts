@@ -6,6 +6,7 @@ import {
 } from '@/api/administracionErrores/administracionErrores';
 import { AppError } from '@/types/erroresExcepciones';
 import { ClienteCompleto, ClienteTable } from '@/types/cliente';
+import { ComboBoxItem } from '@/types';
 
 export async function ObtenerClientes(): Promise<ClienteTable[]> {
     // 1. Obtener los usuarios y retornarlos
@@ -120,4 +121,29 @@ export async function ObtenerCliente(idCliente: number): Promise<ClienteCompleto
     const data = await response.json();
 
     return data.cliente;
+}
+
+export async function ObtenerClientesCombobox(): Promise<ComboBoxItem[]> {
+    // 1. Obtener los usuarios y retornarlos
+
+    const response = await fetch(route('usuario.cliente.consulta.json.combobox'), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+    });
+
+    if (!response.ok) {
+        const errorResponse: ResponseError = await response.json(); //no retorna nada porque es actualizar, pero si retorna, son errores
+        errorResponse.httpStatus = response.status;
+
+        await administracionErrores(errorResponse, 'Error al consultar clientes', false);
+        throw new AppError(errorResponse.errorApp, response.status, 'Error al consultar clientes', errorResponse.titleMessage);
+    }
+
+    // Si llegó acá es que t#do bien
+    const data = await response.json();
+    return data.clientes;
 }

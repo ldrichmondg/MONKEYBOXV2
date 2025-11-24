@@ -6,7 +6,7 @@ export function ExitoModal(titulo = '', textoCuerpo = ''): void {
         icon: "success",
         text: textoCuerpo,
         confirmButtonColor: "#3150F1",
-        confirmButtonText: 'Aceptar'
-
+        confirmButtonText: 'Aceptar',
+        zIndex: 20000
     });
 }

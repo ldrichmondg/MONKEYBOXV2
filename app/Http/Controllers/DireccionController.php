@@ -14,6 +14,7 @@ use App\Http\Resources\TrackingConsultadosTableResource;
 use App\Models\Canton;
 use App\Models\Direccion;
 use App\Models\Distrito;
+use App\Models\Enum\TipoDirecciones;
 use App\Models\Provincia;
 use App\Services\ServicioDireccion;
 use Exception;
@@ -108,6 +109,24 @@ class DireccionController extends Controller
             return response()->json(['trackingsDireccion' => TrackingConsultadosTableResource::collection($trackings)->resolve()]);
         }catch (Exception $e){
             return response()->error('Hubo un error al intentar obtener los trackings de la direccion solicitada');
+        }
+    }
+
+    public function ConsultaProvinciasJson(){
+        try{
+            $provincias = ModelToIdDescripcionDTO::map(Provincia::all());
+            return response()->json(['provincias' => $provincias]);
+        }catch (Exception $e){
+            return response()->error('Hubo un error al intentar obtener las provincias solicitadas');
+        }
+    }
+
+    public function ConsultaTiposDireccionesJson(){
+        try{
+            $tiposDirecciones = TipoDirecciones::list();
+            return response()->json(['tiposDirecciones' => $tiposDirecciones]);
+        }catch (Exception $e){
+            return response()->error('Hubo un error al intentar obtener los tipos de direcciones solicitadas');
         }
     }
 }

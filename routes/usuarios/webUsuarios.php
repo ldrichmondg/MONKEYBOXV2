@@ -83,6 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/cliente/registro/vista', [ClienteController::class, 'RegistroVista'])->name('usuario.cliente.registro.vista');
     Route::post('/cliente/registro/json', [ClienteController::class,  'RegistroJson'])->name('usuario.cliente.registro.json');
+
+    Route::get('/cliente/consulta/json/combobox', [ClienteController::class, 'ConsultaJsonCombobox'])->name('usuario.cliente.consulta.json.combobox');
 });
 
 //RUTAS DIRECCIONES
@@ -94,8 +96,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/direccion/consulta/json/obtenerTrackings', [DireccionController::class, 'ConsultaTrackings'])->name('usuario.direccion.consulta.json.trackings');
 
-    //Route::get('/cliente/consulta/json', [ClienteController::class, 'ConsultaJson'])->name('usuario.cliente.consulta.json');
-    //Route::post('/usuario/registro/json', [UsuarioController::class,  'RegistroJson'])->name('usuario.usuario.registro.json');*/
+    Route::get('/provincia/consulta/json', [DireccionController::class, 'ConsultaProvinciasJson'])->name('usuario.provincias.consulta.json');
+    Route::get('/tiposdirecciones/consulta/json', [DireccionController::class, 'ConsultaTiposDireccionesJson'])->name('usuario.tiposdirecciones.consulta.json');
 });
 
 // RUTAS IMAGENES
